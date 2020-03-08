@@ -66,10 +66,10 @@ par.U(2).f1 = par.U(2).f1*0.9;                   %mA^2 cm^-4
 par.U(2).f2 = 0.99;
 
 %El #3, Worst performing electrolyzer
-par.U(3).r1 = par.U(3).r1*1.4;               %ohm m^2
+par.U(3).r1 = par.U(3).r1*1.1;               %ohm m^2
 par.U(3).s = par.U(3).s*1.1;                   %V
 par.U(3).f1 = par.U(3).f1*1.1;                   %mA^2 cm^-4
-par.U(3).f2 = 0.96;
+par.U(3).f2 = 0.97;
 
 par.N=N;
 end

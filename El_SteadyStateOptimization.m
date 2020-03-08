@@ -42,16 +42,16 @@ lbnO2out_net = 0;%lower bound on oxygen from the outlet
 ubnO2out_net = inf;
 lbT_el_out = 70;%lower bound on the temperature at electrolyzer outlet
 ubT_el_out = 90;
-lbT_k = 70*ones(par.N,1);%lower bound on the electrolyzer temperature
-ubT_k = 90*ones(par.N,1);
+lbT_k = 0*ones(par.N,1);%lower bound on the electrolyzer temperature
+ubT_k = inf*ones(par.N,1);
 lbPstoH2 = 0;%lower bound on the hydrogen storage pressure
 ubPstoH2 = inf;
 lbPstoO2 = 0;%lower bound on the oxygen storage pressure
 ubPstoO2 = inf;
 lbMbt = 0;%lower bound on the mass in the buffer tank 
 ubMbt = inf;
-lbT_el_in = 60;%lower bound on the temperature at electrolyzer inlet
-ubT_el_in = 70;
+lbT_el_in = 0;%lower bound on the temperature at electrolyzer inlet
+ubT_el_in = inf;
 lbT_cw_out = 0;%lower bound on the coolant outlet temperature
 ubT_cw_out = inf;
 
@@ -84,15 +84,16 @@ lbg = [];
 ubg = [];
 
 % declaring constraints
-g = {g{:},eqnAlg, eqnDiff};
-lbg = [lbg;zeros(7*par.N+10,1)];
-ubg = [ubg;zeros(7*par.N+10,1)];
+uElconst = [xAlg(1)-xAlg(2);xAlg(2)-xAlg(3)];
+g = {g{:},eqnAlg, eqnDiff,uElconst};
+lbg = [lbg;zeros(7*par.N+12,1)];
+ubg = [ubg;zeros(7*par.N+12,1)];
 
 % optimization objective function
 % By default, casadi always minimizes the problem. 
 % Since we want to find optimal near the initial guess, we have to write:
-% J = ([x;input]-w0)'*([x;input]-w0); 
-J = 10;
+J = ([x;input]-w0)'*([x;input]-w0); 
+% J = 10;
 
 % formalize into an NLP problem
 nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J);
@@ -155,8 +156,8 @@ V_H2_ini = nH2k*0.0224136*3600;%[Nm3/h]
 for nEl = 1:par.N
     Ps_ini(nEl) = (Uk(nEl)*Ik(nEl)*par.EL(nEl).nc)/(1000*V_H2_ini(nEl));%[kWh/Nm3]
 end
-% V_H2_ini
-% Ps_ini
+V_H2_ini
+Ps_ini
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
 x0 = [Tk PstoH2 PstoO2 massBt T_el_in T_CW_out];

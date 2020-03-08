@@ -63,7 +63,7 @@ x = [xAlg;xDiff];
 %% Solve the steady state optimization problem
 [z0, x0, u0] = El_SteadyStateOptimization(N,X_guess);
 
-T_El_in_set = x0(par.N+4);%setpoint for the temperture of lye entering the electrolyzer 
+T_El_in_set = x0(par.N+4);%setpoint for the temperature of lye entering the electrolyzer 
 %Initial value of the MVs 
 Vss = u0(1:par.N);
 q_lyek = u0(par.N+1:2*par.N);
