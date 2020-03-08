@@ -20,11 +20,11 @@ w = {w{:},x,input};
 w0 = [w0;X0']; %initial guess
 %defining constraints on the decision variables (states and inputs i.e. MVs)
 %constraints on states
-lbu_k = zeros(par.N,1);%lower bound on cell voltage
+lbu_k = 1.6*ones(par.N,1);%lower bound on cell voltage
 ubu_k = 1.9*ones(par.N,1);
 lbi_k = zeros(par.N,1);%lower bound on current
 ubi_k = inf*ones(par.N,1);
-lbP_k = zeros(par.N,1);%lower bound on power
+lbP_k = 2e6*ones(par.N,1);%lower bound on power
 ubP_k = inf*ones(par.N,1);
 lbFeff_k = zeros(par.N,1);%lower bound on faraday efficiency
 ubFeff_k = inf*ones(par.N,1);
@@ -40,9 +40,9 @@ lbnO2el_net = 0;%lower bound on net oxygen production from the electrolyzer
 ubnO2el_net = inf;
 lbnO2out_net = 0;%lower bound on oxygen from the outlet
 ubnO2out_net = inf;
-lbT_el_out = 0;%lower bound on the mixed lye stream temperature at electrolyzer outlet
-ubT_el_out = inf;
-lbT_k = 65*ones(par.N,1);%lower bound on the electrolyzer temperature
+lbT_el_out = 70;%lower bound on the temperature at electrolyzer outlet
+ubT_el_out = 90;
+lbT_k = 70*ones(par.N,1);%lower bound on the electrolyzer temperature
 ubT_k = 90*ones(par.N,1);
 lbPstoH2 = 0;%lower bound on the hydrogen storage pressure
 ubPstoH2 = inf;
@@ -50,8 +50,8 @@ lbPstoO2 = 0;%lower bound on the oxygen storage pressure
 ubPstoO2 = inf;
 lbMbt = 0;%lower bound on the mass in the buffer tank 
 ubMbt = inf;
-lbT_el_in = 0;%lower bound on the mixed lye stream temperature at electrolyzer inlet
-ubT_el_in = inf;
+lbT_el_in = 60;%lower bound on the temperature at electrolyzer inlet
+ubT_el_in = 70;
 lbT_cw_out = 0;%lower bound on the coolant outlet temperature
 ubT_cw_out = inf;
 
@@ -91,8 +91,8 @@ ubg = [ubg;zeros(7*par.N+10,1)];
 % optimization objective function
 % By default, casadi always minimizes the problem. 
 % Since we want to find optimal near the initial guess, we have to write:
-J = ([x;input]-w0)'*([x;input]-w0); 
-% J = L;
+% J = ([x;input]-w0)'*([x;input]-w0); 
+J = 10;
 
 % formalize into an NLP problem
 nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J);
@@ -104,6 +104,7 @@ solver = nlpsol('solver','ipopt',nlp);
 sol = solver('x0',w0,'lbx',lbw,'ubx',ubw,'lbg',lbg,'ubg',ubg);
 res = full(sol.x);
 
+%% Extracting results
 Uk = [];
 Ik = [];
 Pk = [];

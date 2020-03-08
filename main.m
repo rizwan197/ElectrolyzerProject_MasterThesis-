@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 9;                             %no. of hours
+num_hr = 0.25;                             %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -85,7 +85,7 @@ qlye = zeros(len,N);                        %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
-qlye(tstep:end,2) = q_lyek(j)*1.2;
+qlye(tstep:end,2) = q_lyek(j)*1;
 
 q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
 q_cw(tstep:end) = qf_cw*1;                  %incremental step change in cooling water flowrate
