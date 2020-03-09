@@ -1,4 +1,4 @@
-function[xDiff, xAlg, input, eqnAlg, eqnDiff] = model(N)
+function[xDiff, xAlg, input, eqnAlg, eqnDiff, param] = model(N)
 %This function file contains the mathematical model for the system of electrolyzers
 %nEl = sequence of the electrolyzer
 
@@ -49,6 +49,12 @@ import casadi.*
 x = SX.sym('x',7*par.N+10);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
 eqnAlg = SX.zeros(6*par.N+5,1);
 eqnDiff = SX.zeros(par.N+5,1);
+
+p =SX.sym('p',3);
+kvalveH2 = p(1);
+kvalveO2 = p(2);
+UA_Hex = p(3);
+
 
 %variables for algebriac eqns.
 u_k=[];
@@ -133,9 +139,13 @@ end
 
 
 eqnAlg(6*par.N+1) = nH2El_net - sum_H2net;                                              %algebraic eqn for net hydrogen flowrate from all the electrolyzers
-eqnAlg(6*par.N+2) = nH2out_net - par.kvalveH2*zH2*sqrt(Psto_H2-par.Storage.PoutH2);     %algebraic eqn for net hydrogen flowrate from the storage tank
+%eqnAlg(6*par.N+2) = nH2out_net - par.kvalveH2*zH2*sqrt(Psto_H2-par.Storage.PoutH2);     %algebraic eqn for net hydrogen flowrate from the storage tank
+eqnAlg(6*par.N+2) = nH2out_net - kvalveH2*zH2*sqrt(Psto_H2-par.Storage.PoutH2);
+
 eqnAlg(6*par.N+3) = nO2El_net - nH2El_net/2;                                            %algebraic eqn for net oxygen flowrate from all the electrolyzers
-eqnAlg(6*par.N+4) = nO2out_net - par.kvalveO2*zO2*sqrt(Psto_O2-par.Storage.PoutO2);     %algebraic eqn for net oxygen flowrate from the storage tank
+%eqnAlg(6*par.N+4) = nO2out_net - par.kvalveO2*zO2*sqrt(Psto_O2-par.Storage.PoutO2);     %algebraic eqn for net oxygen flowrate from the storage tank
+eqnAlg(6*par.N+4) = nO2out_net - kvalveO2*zO2*sqrt(Psto_O2-par.Storage.PoutO2);
+
 eqnAlg(6*par.N+5) = T_El_out - (((qlyeT*par.Const.CpLye) - (qlossT*par.Const.Cp) + netqloss*(par.Const.Cp-par.Const.CpLye)*par.Const.Tref)/...
     ((netqlye-netqloss)*par.Const.CpLye));                                          %calculation of Tout
 
@@ -155,10 +165,11 @@ deltaT1 = T_El_in - par.Tw_in;%difference in temperatures of hot and cold stream
 deltaT2 = T_El_out - T_cw_out;%difference in temperatures of hot and cold streams at outlet
 deltaT_LMTD = (deltaT1-deltaT2)/log(deltaT1/deltaT2);
 
-eqnDiff(par.N+4) = ((netqlye*(T_El_out-T_El_in))/(1000*par.Const.rho*par.Const.Vh)) - (par.Hex.UA*deltaT_LMTD/(1000*par.Const.rho*par.Const.CpLye*par.Const.Vh));%differential eqn for the hot stream exit temp from heat exchanger
-eqnDiff(par.N+5) = ((q_cw*(par.Tw_in-T_cw_out))/(1000*par.Const.rho*par.Const.Vc)) + (par.Hex.UA*deltaT_LMTD/(1000*par.Const.rho*par.Const.Cp*par.Const.Vc));%differential eqn for the cold stream exit temperature from heat exchanger
+eqnDiff(par.N+4) = ((netqlye*(T_El_out-T_El_in))/(1000*par.Const.rho*par.Const.Vh)) - (UA_Hex*deltaT_LMTD/(1000*par.Const.rho*par.Const.CpLye*par.Const.Vh));%differential eqn for the hot stream exit temp from heat exchanger
+eqnDiff(par.N+5) = ((q_cw*(par.Tw_in-T_cw_out))/(1000*par.Const.rho*par.Const.Vc)) + (UA_Hex*deltaT_LMTD/(1000*par.Const.rho*par.Const.Cp*par.Const.Vc));%differential eqn for the cold stream exit temperature from heat exchanger
 
 xDiff = x(6*par.N+6:end,1);
 xAlg = x(1:6*par.N+5,1);
 input = inp;
+param = [kvalveH2;kvalveO2;UA_Hex];
 end

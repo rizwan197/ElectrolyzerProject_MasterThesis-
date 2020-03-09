@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 0.25;                             %no. of hours
+num_hr = 1;                             %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -34,8 +34,8 @@ T_El_out0 = 80;                 %initial guess for the temperature of lye enteri
 
 %differential state variables('x')
 T_k0 = 75*ones(1,par.N);
-Psto_H20 = 20;      %initial H2 storage pressure (calculated from steady state solution) [bar]
-Psto_O20 = 20;      %initial O2 storage pressure (calculated from steady state solution) [bar]
+Psto_H20 = 25;      %initial H2 storage pressure (calculated from steady state solution) [bar]
+Psto_O20 = 25;      %initial O2 storage pressure (calculated from steady state solution) [bar]
 Mass_Bt0 = 1000000; %mass of the water in the buffer tank,[g]
 T_El_in0 = 65;      %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
 T_cw_out0 = 20;     %initial guess for the exit temperature of the cooling water leaving heat exchanger, [deg C]
@@ -56,12 +56,9 @@ u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0];
 %initial guess vector for the IPOPT
 X_guess = [z_guess x_guess u_guess];
 
-%% Build the plant model
-[xDiff, xAlg, input, eqnAlg, eqnDiff] = model(par.N);
-x = [xAlg;xDiff];
 
 %% Solve the steady state optimization problem
-[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess);
+[z0, x0, u0, DsPar0] = El_SteadyStateOptimization(N,X_guess);
 
 T_El_in_set = x0(par.N+4);%setpoint for the temperature of lye entering the electrolyzer 
 %Initial value of the MVs 
@@ -71,6 +68,10 @@ qf_cw = u0(2*par.N+1);
 zH2 = u0(2*par.N+2);
 zO2 = u0(2*par.N+3);
 Qwater = u0(2*par.N+4);
+
+%% Build the plant model
+[xDiff, xAlg, input, eqnAlg, eqnDiff] = model(par.N);
+x = [xAlg;xDiff];
 
 %% Manipulated variables
 %these are the degree of freedoms that we will utilise to control the system
@@ -85,7 +86,7 @@ qlye = zeros(len,N);                        %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
-qlye(tstep:end,2) = q_lyek(j)*1;
+qlye(tstep:end,1) = q_lyek(2)*1.2;
 
 q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
 q_cw(tstep:end) = qf_cw*1;                  %incremental step change in cooling water flowrate
@@ -180,19 +181,6 @@ for i=1:len
 end
 
 %% Plotting the results
-figure()
-plot(I)
-xlabel('Time, s')
-ylabel('Current, A')
-legend('El 1','El 2', 'El 3')
-grid on
-
-figure()
-plot(U)
-xlabel('Time, s')
-ylabel('Cell voltage, V/cell')
-legend('El 1','El 2', 'El 3')
-grid on
 
 figure()
 subplot(2,1,1)
@@ -214,11 +202,6 @@ subplot(2,1,1)
 plot(PstoH2)
 xlabel('Time, s')
 ylabel('H_2 Storage pressure, bar')
-grid on
-subplot(2,1,2)
-plot(PcompH2)
-xlabel('Time, s')
-ylabel('H_2 compressor power, watts')
 grid on
 
 figure()

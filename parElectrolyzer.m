@@ -7,11 +7,11 @@ par.Const = struct('ze',2,'FC',96485,'R',8.314,'Cp',4.186,'CpLye',3.1006,'Mwt',1
 %water/lye[kg/m3],Vc=volume of cold side of heat exchanger[m3],Vh=volume of
 %hot side of heat exchanger[m3]
 par.Comp = struct('alpha',0.63,'k',1.62,'Tel',25+273,'Pel',3);
-par.Storage = struct('VstoH2',965000,'VstoO2',482500,'PoutH2',19,'PoutO2',19,'TstoH2',25+273.15,'TstoO2',25+273.15,'Rg',8.314e-2,'VdispH2',0.4,'VdispO2',0.4);%VstoH2 and VstoO2 are in litres
+par.Storage = struct('VstoH2',965000,'VstoO2',482500,'PoutH2',19,'PoutO2',19,'TstoH2',25+273.15,'TstoO2',25+273.15,'Rg',8.314e-2,'VdispH2',0.5,'VdispO2',0.5);%VstoH2 and VstoO2 are in litres
 par.Tw_in = 10;             %inlet temperature of the cooling water in lye circulation heat exchanger
 par.Hex.UA = 1.5205e4;      %UA of heat exchanger [W/K], calculated from previous ss formulation
-par.kvalveH2 = 45.0369;     %valve constant for the outlet valve of hydrogen storage tank, calculated from previous ss formulation 
-par.kvalveO2 = 22.5185;     %valve constant for the outlet valve of oxygen storage tank, calculated from previous ss formulation 
+par.kvalveH2 = 14.723;%45.0369;     %valve constant for the outlet valve of hydrogen storage tank, calculated for 25 bar storage pressure at SS
+par.kvalveO2 = 7.362;%22.5185;     %valve constant for the outlet valve of oxygen storage tank, calculated for 25 bar storage pressure at SS 
 par.sigma = 5.672*10^-8;    %stefan-boltzmann constant [W/m^2 K^4]
 par.em = 0.8;               %emissivity [-]
 
@@ -59,17 +59,17 @@ for i =1:N
     par.EL(i).Tstd = 25;                 %standard temperature, [C]
     
 end
-%El #2, Best performing electrolyzer 
-par.U(2).r1 = par.U(2).r1*0.85;               %ohm m^2
-par.U(2).s = par.U(2).s*0.9;                   %V
-par.U(2).f1 = par.U(2).f1*0.9;                   %mA^2 cm^-4
-par.U(2).f2 = 0.99;
-
-%El #3, Worst performing electrolyzer
-par.U(3).r1 = par.U(3).r1*1.1;               %ohm m^2
-par.U(3).s = par.U(3).s*1.1;                   %V
-par.U(3).f1 = par.U(3).f1*1.1;                   %mA^2 cm^-4
-par.U(3).f2 = 0.97;
+% %El #2, Best performing electrolyzer 
+% par.U(2).r1 = par.U(2).r1*0.9;               %ohm m^2
+% par.U(2).s = par.U(2).s*0.9;                   %V
+% par.U(2).f1 = par.U(2).f1*0.9;                   %mA^2 cm^-4
+% par.U(2).f2 = 0.99;
+% 
+% %El #3, Worst performing electrolyzer
+% par.U(3).r1 = par.U(3).r1*1.1;               %ohm m^2
+% par.U(3).s = par.U(3).s*1.1;                   %V
+% par.U(3).f1 = par.U(3).f1*1.1;                   %mA^2 cm^-4
+% par.U(3).f2 = 0.97;
 
 par.N=N;
 end
