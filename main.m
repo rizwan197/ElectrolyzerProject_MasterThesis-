@@ -58,7 +58,7 @@ X_guess = [z_guess x_guess u_guess];
 
 
 %% Solve the steady state optimization problem
-[z0, x0, u0, DsPar0] = El_SteadyStateOptimization(N,X_guess);
+[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess);
 
 T_El_in_set = x0(par.N+4);%setpoint for the temperature of lye entering the electrolyzer 
 %Initial value of the MVs 
