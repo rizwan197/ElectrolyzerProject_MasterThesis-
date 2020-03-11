@@ -42,13 +42,13 @@ par = parElectrolyzer(N);
 
 %% Inputs for the simulation
 Power = 21000*3;                        %power to all the electrolyzers, [Watts]
-num_hr = 3;                             %no. of hours
+num_hr = .25;                             %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
 tsamp = t0:ts:tf;
 len = length(tsamp);                    %number of simulation time steps
-tstep = 900;
+tstep = 200;
 %% Steady state solution and calculation of valve constant
 %The steady state solution is calculated by solving non linear algebraic equations for the steady state system
 %Valve constant (k_vlv) is calculated for steady state condition and is kept constant for rest of the simulation
@@ -115,7 +115,7 @@ qlye = zeros(len,N);                        %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = param.q_lye(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
-qlye(tstep:end,1) = param.q_lye(j)*1; 
+qlye(tstep:end,1) = param.q_lye(j)*1.2; 
 
 Qc = Qcool*ones(len,1);                     %cooler duty as a manipulated variable, [J/s]
 Qc(tstep:end) = Qcool*1;                        %incremental step change in coolent duty
@@ -369,7 +369,8 @@ xlabel('Time, s')
 ylabel('T_i_n, C')
 grid on
 
-
+figure()
+plot(level)
 
 %% Creating the data file
 %save('data_zH2step300_1hr')

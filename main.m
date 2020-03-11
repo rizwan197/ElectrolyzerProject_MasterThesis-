@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 1;                             %no. of hours
+num_hr = .25;                             %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -79,14 +79,14 @@ x = [xAlg;xDiff];
 V_El = zeros(len,N);                       %voltage across the electrolyzer, [Watt], len is the length of time vector
 for j = 1:N
     V_El(1:end,j) = Vss(j)*1;               %incremental step change in common voltage across all electrolysers
-    V_El(tstep:end,j)=Vss(j)*1;
+    V_El(tstep:end,j)=Vss(j)*1.01;
 end
 
 qlye = zeros(len,N);                        %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
-qlye(tstep:end,1) = q_lyek(2)*1.2;
+qlye(tstep:end,1) = q_lyek(2)*1;
 
 q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
 q_cw(tstep:end) = qf_cw*1;                  %incremental step change in cooling water flowrate
@@ -154,7 +154,7 @@ for i=1:len
     Telout(i) = full(r.zf(6*N+5));            %temperature of lye after mixing before going to the buffer tank, [celsius]
     Telin(i) = full(r.xf(N+4));             %temperature of lye going into the electrolyzer, [celsius]
     Tw_out(i) = full(r.xf(N+5));          %exit temperature of the cooling water, [celsius]
-    level(i) = full(r.xf(N+3));
+    level(i) = full(r.xf(N+3));%the height in [m], assuming density of liquid in buffer tank = 1000 kg/m^3 and area =1 m^2 
     
     for j=1:N
         U(i,j) = full(r.zf(j));             %voltage/cell, [V]
@@ -238,4 +238,10 @@ plot(T_El_in_set,'r--')
 xlabel('Time, s')
 ylabel('T_E_l_ _i_n, C')
 %ylim([63.5 65.5])
+grid on
+
+figure()
+plot(level)
+ylabel('Mass of liquid in the buffer tank, cm')
+xlabel('TIme, s')
 grid on

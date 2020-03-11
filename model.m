@@ -31,7 +31,7 @@ function[xDiff, xAlg, input, eqnAlg, eqnDiff] = model(N)
 %Inputs for the model are:
 %1N)V_el, voltage across each electrolyzer
 %2N)qlye_k, lye flowrate through each electrolyzer
-%3)q_cw, cooling watwer flowrate 
+%3)q_cw, cooling water flowrate 
 %4)zH2,outlet valve opening of hydrogen storage tank 
 %5)zO2, outlet valve opening of the oxygen storage tank
 %6)qH2O, flow rate of water added to buffer tank
@@ -152,7 +152,10 @@ end
 
 eqnDiff(par.N+1) = (par.Storage.TstoH2*par.Storage.Rg/par.Storage.VstoH2)*(nH2El_net-nH2out_net);  %differential eqn for hydrogen storage pressure
 eqnDiff(par.N+2) = (par.Storage.TstoO2*par.Storage.Rg/par.Storage.VstoO2)*(nO2El_net-nO2out_net);  %differential eqn for oxygen storage pressure
-eqnDiff(par.N+3) = (netqlye-netqloss) + q_H2O - netqlye;                                     %differential eqn for mass in the buffer tank, [grams i.e. pho*V]
+eqnDiff(par.N+3) = (netqlye-netqloss) + q_H2O - netqlye;    %differential eqn for mass in the buffer tank, [grams i.e. pho*V]
+%the level remains same at steady state but starts to change with the change
+%in net hydrogen production, since the netqloss changes whereas q_H2O is a
+%MV (constant parameter for intergration over time for dynamic states).
 
 %dynamic thermal balance for the heat exchanger, T_in and Tw_out are differential variables
 
