@@ -56,6 +56,9 @@ ubPstoO2 = inf;
 lbMbt = 0;%lower bound on the mass in the buffer tank 
 ubMbt = inf;
 
+lbT_bt_out = 0;%lower bound on the temperature of lye leaving the buffer tank 
+ubT_bt_out = inf;
+
 lbT_el_in = 0;%lower bound on the temperature at electrolyzer inlet
 ubT_el_in = inf;
 
@@ -77,10 +80,10 @@ lbqH2O = 0;%lower bound on total water lost during electrolysis
 ubqH2O = inf;
 
 lbw = [lbw;lbu_k;lbi_k;lbP_k;lbFeff_k;lbnH2_k;lbqH2Oloss_k;...
-    lbnH2el_net;lbnH2out_net;lbnO2el_net;lbnO2out_net;lbT_el_out;lbT_k;lbPstoH2;lbPstoO2;lbMbt;lbT_el_in;lbT_cw_out;...
+    lbnH2el_net;lbnH2out_net;lbnO2el_net;lbnO2out_net;lbT_el_out;lbT_k;lbPstoH2;lbPstoO2;lbMbt;lbT_bt_out;lbT_el_in;lbT_cw_out;...
     lbU_el_k;lbq_lye_k;lbq_cw;lbzH2;lbzO2;lbqH2O];%bounds on all the variables
 ubw = [ubw;ubu_k;ubi_k;ubP_k;ubFeff_k;ubnH2_k;ubqH2Oloss_k;...
-    ubnH2el_net;ubnH2out_net;ubnO2el_net;ubnO2out_net;ubT_el_out;ubT_k;ubPstoH2;ubPstoO2;ubMbt;ubT_el_in;ubT_cw_out;...
+    ubnH2el_net;ubnH2out_net;ubnO2el_net;ubnO2out_net;ubT_el_out;ubT_k;ubPstoH2;ubPstoO2;ubMbt;ubT_bt_out;ubT_el_in;ubT_cw_out;...
     ubU_el_k;ubq_lye_k;ubq_cw;ubzH2;ubzO2;ubqH2O]; 
  
 
@@ -91,24 +94,29 @@ lbg = [];
 ubg = [];
 
 % declaring constraints
-uElconst = [xAlg(1)-xAlg(2);xAlg(2)-xAlg(3)];%electrolyzers operating across same voltage
+% uElconst = [xAlg(1)-xAlg(2);xAlg(2)-xAlg(3)];%electrolyzers operating across same voltage
+% 
+% Iden = SX.zeros(par.N,1);
+% for nEl = 1:par.N
+%     Iden(nEl) = 0.1*xAlg(par.N+nEl)/par.EL(nEl).A; %current density in mA/cm2
+% end
+% lbIden = Iden - 32*ones(par.N,1);
+% ubIden = Iden - 200*ones(par.N,1);
+% 
+% g = {g{:},eqnAlg, eqnDiff,uElconst,lbIden,ubIden};
+% lbg = [lbg;zeros(7*par.N+11,1);zeros(2*par.N+2,1)];
+% ubg = [ubg;zeros(7*par.N+11,1);zeros(2*par.N+2,1)];
 
-Iden = SX.zeros(par.N,1);
-for nEl = 1:par.N
-    Iden(nEl) = 0.1*xAlg(par.N+nEl)/par.EL(nEl).A; %current density in mA/cm2
-end
-lbIden = Iden - 32*ones(par.N,1);
-ubIden = Iden - 200*ones(par.N,1);
 
-g = {g{:},eqnAlg, eqnDiff,uElconst,lbIden,ubIden};
-lbg = [lbg;zeros(7*par.N+10,1);zeros(2*par.N+2,1)];
-ubg = [ubg;zeros(7*par.N+10,1);zeros(2*par.N+2,1)];
+g = {g{:},eqnAlg, eqnDiff};
+lbg = [lbg;zeros(7*par.N+11,1)];
+ubg = [ubg;zeros(7*par.N+11,1)];
 
 % optimization objective function
 % By default, casadi always minimizes the problem. 
 % Since we want to find optimal near the initial guess, we have to write:
-% J = ([x;input]-w0)'*([x;input]-w0); 
-J = 10;
+J = ([x;input]-w0)'*([x;input]-w0); 
+% J = 10;
 
 % formalize into an NLP problem
 nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J);
@@ -142,8 +150,8 @@ for nEl = 1:par.N
     %optimal value of the differential state
     Tk = [Tk res(6*par.N+5+nEl)];               %temperature of the individual electrolyzer
     %optimal value of the inputs
-    Vss = [Vss res(7*par.N+10+nEl)];            %electrolyzer voltage
-    q_lyek = [q_lyek res(8*par.N+10+nEl)];      %lye flowrate
+    Vss = [Vss res(7*par.N+11+nEl)];            %electrolyzer voltage
+    q_lyek = [q_lyek res(8*par.N+11+nEl)];      %lye flowrate
 end
 
 %optimal value of the algebriac state
@@ -156,13 +164,14 @@ T_el_out=res(6*par.N+5);        %temp after mixing of the exiting liquid streams
 PstoH2=res(7*par.N+6);
 PstoO2=res(7*par.N+7);
 massBt=res(7*par.N+8);
-T_el_in=res(7*par.N+9);         %temp of inlet lye stream coming into the electrolyzer
-T_CW_out=res(7*par.N+10);
+T_bt_out=res(7*par.N+9);
+T_el_in=res(7*par.N+10);         %temp of inlet lye stream coming into the electrolyzer
+T_CW_out=res(7*par.N+11);
 %optimal value of the inputs
-qf_cw=res(9*par.N+11);
-zH2=res(9*par.N+12);
-zO2=res(9*par.N+13);
-Qwater=res(9*par.N+14);
+qf_cw=res(9*par.N+12);
+zH2=res(9*par.N+13);
+zO2=res(9*par.N+14);
+Qwater=res(9*par.N+15);
 
 
 %% Calculation of initial state vector
@@ -178,7 +187,7 @@ Ps_ini
 Iden
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
-x0 = [Tk PstoH2 PstoO2 massBt T_el_in T_CW_out];
+x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];
 u0 = [Vss q_lyek qf_cw zH2 zO2 Qwater];
 
 end

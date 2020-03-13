@@ -2,16 +2,19 @@ function par = parElectrolyzer(N)
 
 %This script defines values of the input parameters for all electrolyzers.
 
-par.Const = struct('ze',2,'FC',96485,'R',8.314,'Cp',4.186,'CpLye',3.1006,'Mwt',18,'MwtH2',2.01588,'Tref',25,'rho',1000,'Vc',2.0681,'Vh',1.9944);
+par.Const = struct('ze',2,'FC',96485,'R',8.314,'Cp',4.186,'CpLye',3.1006,'Mwt',18,'MwtH2',2.01588,...
+    'Tref',25,'rho',1000,'Vc',2.0681,'Vh',1.9944,'MassBt',15000000);
 %Cp=specific heat of water, [J/gK];Mwt=mol. wt of H2O, rho=density of
 %water/lye[kg/m3],Vc=volume of cold side of heat exchanger[m3],Vh=volume of
-%hot side of heat exchanger[m3]
+%hot side of heat exchanger[m3], MassBt=Mass of liquid in the buffer tank [g]
 par.Comp = struct('alpha',0.63,'k',1.62,'Tel',25+273,'Pel',3);
 par.Storage = struct('VstoH2',965000,'VstoO2',482500,'PoutH2',19,'PoutO2',19,'TstoH2',25+273.15,'TstoO2',25+273.15,'Rg',8.314e-2,'VdispH2',0.5,'VdispO2',0.5);%VstoH2 and VstoO2 are in litres
 par.Tw_in = 10;             %inlet temperature of the cooling water in lye circulation heat exchanger
 par.Hex.UA = 1.5205e4;      %UA of heat exchanger [W/K], calculated from previous ss formulation
-par.kvalveH2 = 14.723;%45.0369;     %valve constant for the outlet valve of hydrogen storage tank, calculated for 25 bar storage pressure at SS
-par.kvalveO2 = 7.362;%22.5185;     %valve constant for the outlet valve of oxygen storage tank, calculated for 25 bar storage pressure at SS 
+%par.kvalveH2 = 14.723;
+par.kvalveH2=45.0369;     %valve constant for the outlet valve of hydrogen storage tank, calculated for 25 bar storage pressure at SS
+% par.kvalveO2 = 7.362;
+par.kvalveO2=22.5185;     %valve constant for the outlet valve of oxygen storage tank, calculated for 25 bar storage pressure at SS 
 par.sigma = 5.672*10^-8;    %stefan-boltzmann constant [W/m^2 K^4]
 par.em = 0.8;               %emissivity [-]
 
