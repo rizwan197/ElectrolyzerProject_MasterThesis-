@@ -18,6 +18,7 @@ tf = num_hr*60*60;                      %final, [s]
 tsamp = t0:ts:tf;
 len = length(tsamp);                    %number of simulation time steps
 tstep = 200;
+
 %% Initial guess for steady state optimization using IPOPT
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
@@ -34,12 +35,12 @@ T_El_out0 = 80;                         %initial guess for the temperature of ly
 
 %differential state variables('x')
 T_k0 = 75*ones(1,par.N);
-Psto_H20 = 25;          %initial H2 storage pressure (calculated from steady state solution) [bar]
-Psto_O20 = 25;          %initial O2 storage pressure (calculated from steady state solution) [bar]
-Mass_Bt0 = 15000000;    %mass of the liquid in the buffer tank,[g] 15000kg
-T_bt_out0 = 70;         %Initial guess for the temperature of lye mixture at the exit of the buffer tank, [degC]
-T_El_in0 = 65;          %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
-T_cw_out0 = 20;         %initial guess for the exit temperature of the cooling water leaving heat exchanger, [deg C]
+Psto_H20 = 25;        %initial H2 storage pressure (calculated from steady state solution) [bar]
+Psto_O20 = 25;        %initial O2 storage pressure (calculated from steady state solution) [bar]
+Mass_Bt0 = 15000000;  %mass of the liquid in the buffer tank,[g] 15000kg
+T_bt_out0 = 70;       %Initial guess for the temperature of lye mixture at the exit of the buffer tank,[degC]
+T_El_in0 = 65;        %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
+T_cw_out0 = 20;       %initial guess for the exit temperature of the cooling water leaving heat exchanger,[deg C]
 
 z_guess = [u_k0 i_k0 P_k0 Feff_k0 nH2_k0 qH2Oloss_k0 nH2El_net0 nH2out_net0 nO2El_net0 nO2out_net0 T_El_out0];
 x_guess = [T_k0 Psto_H20 Psto_O20 Mass_Bt0 T_bt_out0 T_El_in0 T_cw_out0];
@@ -71,19 +72,18 @@ zO2 = u0(2*par.N+3);
 Qwater = u0(2*par.N+4);
 
 %% Build the plant model
-[xDiff, xAlg, input, eqnAlg, eqnDiff] = model(par.N);
-x = [xAlg;xDiff];
+[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
 
 %% Manipulated variables
 %these are the degree of freedoms that we will utilise to control the system
 
-V_El = zeros(len,N);                       %voltage across the electrolyzer, [Watt], len is the length of time vector
+V_El = zeros(len,N);              %voltage across the electrolyzer, [Watt], len is the length of time vector
 for j = 1:N
-    V_El(1:end,j) = Vss(j)*1;               %incremental step change in common voltage across all electrolysers
+    V_El(1:end,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
     V_El(tstep:end,j)=Vss(j)*1;
 end
 
-qlye = zeros(len,N);                        %lye flowrate, [g/s]
+qlye = zeros(len,N);                   %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
@@ -98,7 +98,7 @@ ZH2 = zH2*ones(len,1);      %H2 valve displacement as a manipulated variable
 ZO2 = zO2*ones(len,1);      %O2 valve displacement as a manipulated variable
 %ZO2(tstep:end) = .7;                         %change in O2 valve displacement
 
-qH2O = Qwater*ones(len,1);                  %flow rate of water added to buffer tank as a manipulated variable, [g/s]
+qH2O = Qwater*ones(len,1);  %flow rate of water added to buffer tank as a manipulated variable, [g/s]
 %qH2O(tstep:end)=Qwater*1.2;                  %incremental step change in the water flow rate
 
 %% Initialize plotting variables
@@ -127,10 +127,7 @@ Qgen = zeros(len,1);                    %heat generated in the electrolyzer, [wa
 Qlosslye = zeros(len,1);                %heat taken out by the lye from the electrolyzer, [watts]
 P_net = zeros(len,1);                   %net power to the electrolyzer assembly, [watts]
 
-%% Build integrator to integrate plant over the time horizon
-
-dae = struct('x',xDiff,'z',xAlg,'p',input,'ode',eqnDiff,'alg',eqnAlg);
-F = integrator('F', 'idas', dae);
+%% Integrate plant over the time horizon
 
 for i=1:len
     %i = timestamp
@@ -144,23 +141,25 @@ for i=1:len
     %% Storing values in plotting variables
     
     %calculation of compressor power
-    PcompH2(i) = full(((r.zf(6*N+1)*par.Comp.k*par.Const.R*par.Comp.Tel)/(par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+1)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
-    PcompO2(i) = full(((r.zf(6*N+3)*par.Comp.k*par.Const.R*par.Comp.Tel)/(par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+2)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
+    PcompH2(i) = full(((r.zf(6*N+1)*par.Comp.k*par.Const.R*par.Comp.Tel)/...
+        (par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+1)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
+    PcompO2(i) = full(((r.zf(6*N+3)*par.Comp.k*par.Const.R*par.Comp.Tel)/...
+        (par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+2)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
     %assuming same k and Tel for O2
     
     
-    nH2in(i) = full(r.zf(6*N+1));           %net hydrogen flow rate in to the storage at all timestamps, [mol/s]
-    nH2out(i) = full(r.zf(6*N+2));          %net hydrogen flowrate out from the storage at all timestamps, [mol/s]
-    nO2in(i) = full(r.zf(6*N+3));           %net oxygen flow rate in to the storage at all timestamps, [mol/s]
-    nO2out(i) = full(r.zf(6*N+4));          %net oxygen flowrate out from the storage at all timestamps, [mol/s]
-    Telout(i) = full(r.zf(6*N+5));          %temperature of lye after mixing before going to the buffer tank, [celsius]
+    nH2in(i) = full(r.zf(6*N+1));     %net hydrogen flow rate in to the storage at all timestamps, [mol/s]
+    nH2out(i) = full(r.zf(6*N+2));    %net hydrogen flowrate out from the storage at all timestamps, [mol/s]
+    nO2in(i) = full(r.zf(6*N+3));     %net oxygen flow rate in to the storage at all timestamps, [mol/s]
+    nO2out(i) = full(r.zf(6*N+4));    %net oxygen flowrate out from the storage at all timestamps, [mol/s]
+    Telout(i) = full(r.zf(6*N+5));    %temperature of lye after mixing before going to the buffer tank, [celsius]
     
-    PstoH2(i) = full(r.xf(N+1));            %hydrogen storage pressure at all timestamps, [bar]
-    PstoO2(i) = full(r.xf(N+2));            %oxygen storage pressure at all timestamps, [bar]
-    mBufferT(i) = full(r.xf(N+3));          %the height in [m], assuming density of liquid in buffer tank = 1000 kg/m^3 and area =1 m^2 
-    Tbtout(i) = full(r.xf(N+4));            %temperature of lye mixture at the exit of the buffer tank, [degC]
-    Telin(i) = full(r.xf(N+5));             %temperature of lye going into the electrolyzer, [celsius]
-    Tw_out(i) = full(r.xf(N+6));            %exit temperature of the cooling water, [celsius]
+    PstoH2(i) = full(r.xf(N+1));      %hydrogen storage pressure at all timestamps, [bar]
+    PstoO2(i) = full(r.xf(N+2));      %oxygen storage pressure at all timestamps, [bar]
+    mBufferT(i) = full(r.xf(N+3));    %
+    Tbtout(i) = full(r.xf(N+4));      %temperature of lye mixture at the exit of the buffer tank, [degC]
+    Telin(i) = full(r.xf(N+5));       %temperature of lye going into the electrolyzer, [celsius]
+    Tw_out(i) = full(r.xf(N+6));      %exit temperature of the cooling water, [celsius]
     
     
     for j=1:N
@@ -174,11 +173,14 @@ for i=1:len
         I_den(i,j) = 0.1*I(i,j)/par.EL(j).A;    %current density, [mA/cm^2]
         
         Qloss(i,j) = par.TherMo(j).A_El*(par.TherMo(j).hc*(Temp(j)-par.EL(j).Ta) + ...
-            par.sigma*par.em*((Temp(j)+273.15)^4-(par.EL(j).Ta+273.15)^4));             %heat loss to surrounding in the electrolyzer, [watts]
+            par.sigma*par.em*((Temp(j)+273.15)^4-(par.EL(j).Ta+273.15)^4)); 
+        %heat loss to surrounding in the electrolyzer, [watts]
         
-        Qgen(i,j) = par.EL(j).nc*(U(i,j)-par.EL(j).Utn)*I(i,j);                         %heat generated in the electrolyzer, [watts]
+        Qgen(i,j) = par.EL(j).nc*(U(i,j)-par.EL(j).Utn)*I(i,j);             
+        %heat generated in the electrolyzer, [watts]
         
-        Qlosslye(i,j) = qlye(i,j)*par.Const.CpLye*(Telin(i)-Temp(i,j));                 %heat taken out by the lye from the electrolyzer, [watts]
+        Qlosslye(i,j) = qlye(i,j)*par.Const.CpLye*(Telin(i)-Temp(i,j));                 
+        %heat taken out by the lye from the electrolyzer, [watts]
         
         V_H2(i,j) = nH2elout(i,j)*0.0224136*3600;%hydrogen production rate from individual electrolyzer, [Nm3/h]
         Ps(i,j) = P(i,j)/(1000*V_H2(i,j));%Specific electricity consumption, [kWh/Nm3]

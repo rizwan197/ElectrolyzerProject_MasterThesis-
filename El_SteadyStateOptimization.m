@@ -7,9 +7,7 @@ par = parElectrolyzer(N);
 [xDiff, xAlg, input, eqnAlg, eqnDiff] = model(par.N);
 x = [xAlg;xDiff];
 
-%DsPar = [par.kvalveH2;par.kvalveO2;par.Hex.UA];
-
-% preparing symbolic variables
+%% preparing symbolic variables
 w = {};
 % preparing numeric variables and bounds
 w0 = [];
@@ -20,27 +18,38 @@ ubw = [];
 w = {w{:},x,input};
 % declaring them numerically
 w0 = [w0;X0']; %initial guess
+
 %defining constraints on the decision variables (states and inputs i.e. MVs)
+
 %constraints on states
 lbu_k = 0*ones(par.N,1);%lower bound on cell voltage
 ubu_k = inf*ones(par.N,1);
+
 lbi_k = zeros(par.N,1);%lower bound on current
 ubi_k = inf*ones(par.N,1);
+
 lbP_k = 0*ones(par.N,1);%lower bound on power
 ubP_k = inf*ones(par.N,1);
-lbFeff_k = zeros(par.N,1);%lower bound on faraday efficiency
-ubFeff_k = inf*ones(par.N,1);
+
+lbFeff_k = 0*ones(par.N,1);%lower bound on faraday efficiency
+ubFeff_k = 1*ones(par.N,1);
+
 lbnH2_k = zeros(par.N,1);%lower bound on hydrogen production
 ubnH2_k = inf*ones(par.N,1);
+
 lbqH2Oloss_k = zeros(par.N,1);%lower bound on water loss
 ubqH2Oloss_k = inf*ones(par.N,1);
+
 lbnH2el_net = 0;%lower bound on net hydrogen production from the electrolyzer
 ubnH2el_net = inf;
-lbnH2out_net = 0;%lower bound on hydrogen from the outlet 
+
+lbnH2out_net = 0;%lower bound on hydrogen from the storage tank outlet 
 ubnH2out_net = inf;
+
 lbnO2el_net = 0;%lower bound on net oxygen production from the electrolyzer
 ubnO2el_net = inf;
-lbnO2out_net = 0;%lower bound on oxygen from the outlet
+
+lbnO2out_net = 0;%lower bound on oxygen from the storage tank outlet
 ubnO2out_net = inf;
 
 lbT_el_out = 0;%lower bound on the temperature at electrolyzer outlet
@@ -49,12 +58,14 @@ ubT_el_out = inf;
 lbT_k = 25*ones(par.N,1);%lower bound on the electrolyzer temperature
 ubT_k = 80*ones(par.N,1);
 
-lbPstoH2 = 0;%lower bound on the hydrogen storage pressure
-ubPstoH2 = inf;
-lbPstoO2 = 0;%lower bound on the oxygen storage pressure
-ubPstoO2 = inf;
-lbMbt = 0;%lower bound on the mass in the buffer tank 
-ubMbt = inf;
+lbPstoH2 = 20;%lower bound on the hydrogen storage pressure
+ubPstoH2 = 30;
+
+lbPstoO2 = 20;%lower bound on the oxygen storage pressure
+ubPstoO2 = 30;
+
+lbMbt = 10000000;%lower bound on the mass in the buffer tank 
+ubMbt = 15000000;
 
 lbT_bt_out = 0;%lower bound on the temperature of lye leaving the buffer tank 
 ubT_bt_out = inf;
@@ -79,46 +90,42 @@ ubzO2 = 1;
 lbqH2O = 0;%lower bound on total water lost during electrolysis
 ubqH2O = inf;
 
-lbw = [lbw;lbu_k;lbi_k;lbP_k;lbFeff_k;lbnH2_k;lbqH2Oloss_k;...
-    lbnH2el_net;lbnH2out_net;lbnO2el_net;lbnO2out_net;lbT_el_out;lbT_k;lbPstoH2;lbPstoO2;lbMbt;lbT_bt_out;lbT_el_in;lbT_cw_out;...
-    lbU_el_k;lbq_lye_k;lbq_cw;lbzH2;lbzO2;lbqH2O];%bounds on all the variables
-ubw = [ubw;ubu_k;ubi_k;ubP_k;ubFeff_k;ubnH2_k;ubqH2Oloss_k;...
-    ubnH2el_net;ubnH2out_net;ubnO2el_net;ubnO2out_net;ubT_el_out;ubT_k;ubPstoH2;ubPstoO2;ubMbt;ubT_bt_out;ubT_el_in;ubT_cw_out;...
-    ubU_el_k;ubq_lye_k;ubq_cw;ubzH2;ubzO2;ubqH2O]; 
+lbw = [lbw;lbu_k;lbi_k;lbP_k;lbFeff_k;lbnH2_k;lbqH2Oloss_k;lbnH2el_net;...
+    lbnH2out_net;lbnO2el_net;lbnO2out_net;lbT_el_out;lbT_k;lbPstoH2;...
+    lbPstoO2;lbMbt;lbT_bt_out;lbT_el_in;lbT_cw_out;lbU_el_k;lbq_lye_k;...
+    lbq_cw;lbzH2;lbzO2;lbqH2O];%bounds on all the variables
+ubw = [ubw;ubu_k;ubi_k;ubP_k;ubFeff_k;ubnH2_k;ubqH2Oloss_k;ubnH2el_net;...
+    ubnH2out_net;ubnO2el_net;ubnO2out_net;ubT_el_out;ubT_k;ubPstoH2;...
+    ubPstoO2;ubMbt;ubT_bt_out;ubT_el_in;ubT_cw_out;ubU_el_k;ubq_lye_k;...
+    ubq_cw;ubzH2;ubzO2;ubqH2O]; 
  
 
-% preparing symbolic constraints
+%% preparing symbolic constraints
 g = {};
 % preparing numeric bounds
 lbg = [];
 ubg = [];
 
 % declaring constraints
-% uElconst = [xAlg(1)-xAlg(2);xAlg(2)-xAlg(3)];%electrolyzers operating across same voltage
-% 
-% Iden = SX.zeros(par.N,1);
-% for nEl = 1:par.N
-%     Iden(nEl) = 0.1*xAlg(par.N+nEl)/par.EL(nEl).A; %current density in mA/cm2
-% end
-% lbIden = Iden - 32*ones(par.N,1);
-% ubIden = Iden - 200*ones(par.N,1);
-% 
-% g = {g{:},eqnAlg, eqnDiff,uElconst,lbIden,ubIden};
-% lbg = [lbg;zeros(7*par.N+11,1);zeros(2*par.N+2,1)];
-% ubg = [ubg;zeros(7*par.N+11,1);zeros(2*par.N+2,1)];
+uElconst = [xAlg(1)-xAlg(2);xAlg(2)-xAlg(3)];
+%electrolyzers operating across same voltage
 
+Iden = SX.zeros(par.N,1);
+for nEl = 1:par.N
+    Iden(nEl) = (0.1*xAlg(par.N+nEl))/par.EL(nEl).A; %current density in mA/cm2
+end
+IdenMin = 32;   %minimum current density, 32 mA/cm2
+IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
-g = {g{:},eqnAlg, eqnDiff};
-lbg = [lbg;zeros(7*par.N+11,1)];
-ubg = [ubg;zeros(7*par.N+11,1)];
+g = {g{:},eqnAlg, eqnDiff,uElconst, Iden};
+lbg = [lbg;zeros(7*par.N+11,1);zeros(2,1);IdenMin*ones(par.N,1)];
+ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1)];
 
-% optimization objective function
-% By default, casadi always minimizes the problem. 
 % Since we want to find optimal near the initial guess, we have to write:
-J = ([x;input]-w0)'*([x;input]-w0); 
-% J = 10;
+% J = ([x;input]-w0)'*([x;input]-w0); 
+J = 10;
 
-% formalize into an NLP problem
+%% formalize into an NLP problem
 nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J);
 
 % assign solver - IPOPT in this case

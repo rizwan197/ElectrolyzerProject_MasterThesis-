@@ -1,4 +1,4 @@
-function[xDiff, xAlg, input, eqnAlg, eqnDiff] = model(N)
+function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(N)
 %This function file contains the mathematical model for the system of electrolyzers
 %nEl = sequence of the electrolyzer
 
@@ -149,7 +149,7 @@ end
 
 eqnDiff(par.N+1) = (par.Storage.TstoH2*par.Storage.Rg/par.Storage.VstoH2)*(nH2El_net-nH2out_net);  %differential eqn for hydrogen storage pressure
 eqnDiff(par.N+2) = (par.Storage.TstoO2*par.Storage.Rg/par.Storage.VstoO2)*(nO2El_net-nO2out_net);  %differential eqn for oxygen storage pressure
-eqnDiff(par.N+3) = netqout + q_H2O - netqlye;    %differential eqn for mass in the buffer tank, [grams i.e. pho*V]
+eqnDiff(par.N+3) = netqout + q_H2O - netqlye;    %differential eqn for mass of liquid in the buffer tank, [grams i.e. pho*V]
 %the level remains same at steady state but starts to change with the change
 %in net hydrogen production, since the netqloss changes whereas q_H2O is a
 %MV (constant parameter for intergration over time for dynamic states).
@@ -171,4 +171,8 @@ eqnDiff(par.N+6) = ((q_cw*(par.Tw_in-T_cw_out))/(1000*par.Const.rho*par.Const.Vc
 xDiff = x(6*par.N+6:end,1);
 xAlg = x(1:6*par.N+5,1);
 input = inp;
+
+dae = struct('x',xDiff,'z',xAlg,'p',input,'ode',eqnDiff,'alg',eqnAlg);
+F = integrator('F', 'idas', dae);
+
 end
