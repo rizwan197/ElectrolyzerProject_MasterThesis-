@@ -200,21 +200,22 @@ figure()
 subplot(2,1,1)
 plot(V_H2)
 xlabel('Time, s')
-ylabel('H_2 production rate, Nm^3/hr')
+ylabel('H_2 production rate, [Nm^3/hr]')
 legend('El 1','El 2', 'El 3')
 grid on
 
 subplot(2,1,2)
 plot(Ps)
 xlabel('Time, s')
-ylabel('Specific electricity consumption, kWh/Nm^3')
+ylabel('Specific electricity consumption, [kWh/Nm^3]')
+ylim([4.3, 4.7])
 legend('El 1','El 2', 'El 3')
 grid on
 
 figure()
 plot(PstoH2)
 xlabel('Time, s')
-ylabel('H_2 Storage pressure, bar')
+ylabel('H_2 Storage pressure, [bar]')
 grid on
 
 figure()
@@ -225,36 +226,37 @@ plot(Temp(:,2))
 hold on
 plot(Temp(:,3))
 xlabel('Time, s')
-ylabel('T_k, C')
+ylabel('T_k, [ ^0C]')
+ylim([69, 82])
 grid on
 subplot(2,1,2)
 plot(Telout)
 xlabel('Time, s')
-ylabel('T_o_u_t, C')
+ylabel('T_o_u_t,[ ^0 C]')
 grid on
 
 figure()
 subplot(3,1,1)
 plot(qlye(:,1))
 xlabel('Time, s')
-ylabel('Lye flowrate to El 1')
+ylabel('Lye flowrate to El 1, g/s')
 grid on
 subplot(3,1,2)
 plot(q_cw)
 xlabel('Time, s')
-ylabel('Cooling duty')
+ylabel('Cooling water flowrate, g/s')
 grid on
 subplot(3,1,3)
 plot(Telin,'k')
 hold on
 plot(T_El_in_set,'r--')
 xlabel('Time, s')
-ylabel('T_E_l_ _i_n, C')
+ylabel('T_E_l_ _i_n, [ ^0C]')
 %ylim([63.5 65.5])
 grid on
 
 figure()
-plot(mBufferT)
-ylabel('Mass of liquid in the buffer tank, grams')
+plot(mBufferT./1000)
+ylabel('Mass of liquid in the buffer tank, [kg]')
 xlabel('Time, s')
 grid on
