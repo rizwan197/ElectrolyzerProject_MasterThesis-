@@ -37,7 +37,7 @@ T_El_out0 = 80;                         %initial guess for the temperature of ly
 T_k0 = 75*ones(1,par.N);
 Psto_H20 = 25;        %initial H2 storage pressure (calculated from steady state solution) [bar]
 Psto_O20 = 25;        %initial O2 storage pressure (calculated from steady state solution) [bar]
-Mass_Bt0 = 15000000;  %mass of the liquid in the buffer tank,[g] 15000kg
+Mass_Bt0 = 6000000;  %mass of the liquid in the buffer tank,[g] 6000kg
 T_bt_out0 = 70;       %Initial guess for the temperature of lye mixture at the exit of the buffer tank,[degC]
 T_El_in0 = 65;        %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
 T_cw_out0 = 20;       %initial guess for the exit temperature of the cooling water leaving heat exchanger,[deg C]
@@ -87,10 +87,10 @@ qlye = zeros(len,N);                   %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
-% qlye(tstep:end,1) = q_lyek(2)*1;
+% qlye(tstep:end,2) = q_lyek(2)*1.2;
 
 q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
-% q_cw(tstep:end) = qf_cw*1;                  %incremental step change in cooling water flowrate
+% q_cw(tstep:end) = qf_cw*1.1;                  %incremental step change in cooling water flowrate
 
 ZH2 = zH2*ones(len,1);      %H2 valve displacement as a manipulated variable
 %ZH2(tstep:end) = .2;                         %change in H2 valve displacement
@@ -260,3 +260,7 @@ plot(mBufferT./1000)
 ylabel('Mass of liquid in the buffer tank, [kg]')
 xlabel('Time, s')
 grid on
+
+%% Creating the data file
+% save('data_Step_qlye2_40hr')
+% load data_q1step3000_MVQcool_12hr

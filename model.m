@@ -10,23 +10,27 @@ function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(N)
 %4N)Feff - ((.1*I/A)^2)/(f1+((.1*I/A)^2))*f2;
 %5N)nH2el - Feff*nc*I/(ze*FC);
 %6N)qH2Oloss - nH2*MwtH2O = 0;
-%7)nH2_el_net - sum(nH2el) = 0;
-%8)nH2_out_net - kvlvH2*VdispH2*sqrt(PstoH2-PoutH2) = 0;
-%9)nO2_el_net - nH2elnet/2 = 0;
-%10)nO2_out_net - kvlvO2*VdispO2*sqrt(PstoO2-PoutO2) = 0;
-%11)T_el_out - ((sum(qlye*T)*CpLye - sum(qloss*T)*Cp + sum(qloss)*(Cp-CpLye)*Tref)/((sum(qlye)-sum(qloss))*Cp) = 0;
+%6N+1)nH2_el_net - sum(nH2el) = 0;
+%6N+2)nH2_out_net - kvlvH2*VdispH2*sqrt(PstoH2-PoutH2) = 0;
+%6N+3)nO2_el_net - nH2elnet/2 = 0;
+%6N+4)nO2_out_net - kvlvO2*VdispO2*sqrt(PstoO2-PoutO2) = 0;
+%6N+5)T_el_out - ((sum(qlye*T)*CpLye - sum(qloss*T)*Cp + sum(qloss)*(Cp-CpLye)*Tref)/((sum(qlye)-sum(qloss))*Cp) = 0;
 
 %ODE eqautions are:
 %1N)dT/dt = (q_lye_k(nEl)*CpLye*(T_El_in-T_k(nEl)) + nc*(u_k(nEl)-cUtn)*i_k(nEl) - ...
-%        A_surf*i_k(nEl)* nc/1000*(hc*(T_k(nEl)-par.EL(nEl).Ta) + ...
-%        sigma*em*((T_k(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4)))/(CtS*i_k(nEl));
-%2)dPstoH2/dt = (TstoH2*Rg/VstoH2)*(nH2-nH2out);
-%3)dPstoO2/dt = (TstoO2*Rg/VstoO2)*(nO2-nO2out);
-%4)dM_bt/dt = (qlye-qloss) + qH2O - qlye;
-%5)dT_El_in/dt = ((netqlye*(T_El_out-T_El_in))/(1000*rho*Vh)) ...
-% - (UA*deltaT_LMTD/(1000*rho*CpLye*Vh));
-%6)dT_cw_out/dt = ((q_cw*(Tw_in-T_cw_out))/(1000*rho*Vc))...
-% + (UA*deltaT_LMTD/(1000*rho*Cp*Vc));
+%        A_surf*(hc*(T_k(nEl)-par.EL(nEl).Ta) + ...
+%        sigma*em*((T_k(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4)))/(CtS*Pnom);
+%N+1)dPstoH2/dt = (TstoH2*Rg/VstoH2)*(nH2-nH2out);
+%N+2)dPstoO2/dt = (TstoO2*Rg/VstoO2)*(nO2-nO2out);
+%N+3)dM_bt/dt = (qlye-qloss) + qH2O - qlye;
+%N+4)dT_bt_out/dt = (netqout*par.Const.CpLye*(T_El_out-T_bt_out) + ...
+%     q_H2O*(par.Const.Cp*T_bt_out - par.Const.CpLye*T_bt_out) ...
+%     - (netqout*par.Const.CpLye+q_H2O*par.Const.Cp-netqlye*par.Const.CpLye)*par.Const.Tref)...
+%     /(Mass_Bt*par.Const.CpLye);
+%N+5)dT_El_in/dt = ((netqlye*(T_bt_out-T_El_in))/(1000*rho*Vh)) ...
+%                - (UA*deltaT_LMTD/(1000*rho*CpLye*Vh));
+%N+6)dT_cw_out/dt = ((q_cw*(Tw_in-T_cw_out))/(1000*rho*Vc))...
+%                 + (UA*deltaT_LMTD/(1000*rho*Cp*Vc));
 
 %Inputs for the model are:
 %1N)V_el, voltage across each electrolyzer
@@ -163,8 +167,8 @@ deltaT1 = T_El_in - par.Tw_in;%difference in temperatures of hot and cold stream
 deltaT2 = T_bt_out - T_cw_out;%difference in temperatures of hot and cold streams at outlet
 deltaT_LMTD = (deltaT1-deltaT2)/log(deltaT1/deltaT2);
 
-eqnDiff(par.N+5) = ((netqlye*(T_bt_out-T_El_in))/(1000*par.Const.rho*par.Const.Vh)) - ...
-    (par.Hex.UA*deltaT_LMTD/(1000*par.Const.rho*par.Const.CpLye*par.Const.Vh));%differential eqn for the hot stream exit temp from heat exchanger
+eqnDiff(par.N+5) = ((netqlye*(T_bt_out-T_El_in))/(1000*par.Const.rhoLye*par.Const.Vh)) - ...
+    (par.Hex.UA*deltaT_LMTD/(1000*par.Const.rhoLye*par.Const.CpLye*par.Const.Vh));%differential eqn for the hot stream exit temp from heat exchanger
 eqnDiff(par.N+6) = ((q_cw*(par.Tw_in-T_cw_out))/(1000*par.Const.rho*par.Const.Vc)) + ...
     (par.Hex.UA*deltaT_LMTD/(1000*par.Const.rho*par.Const.Cp*par.Const.Vc));%differential eqn for the cold stream exit temperature from heat exchanger
 

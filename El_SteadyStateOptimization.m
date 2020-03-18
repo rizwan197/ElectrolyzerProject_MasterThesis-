@@ -5,7 +5,7 @@ par = parElectrolyzer(N);
 
 %% Build the plant model and solve steady state optimization problem
 [xDiff, xAlg, input, eqnAlg, eqnDiff] = model(par.N);
-x = [xAlg;xDiff];
+x = [xAlg;xDiff]; 
 
 %% preparing symbolic variables
 w = {};

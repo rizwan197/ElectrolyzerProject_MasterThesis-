@@ -3,11 +3,10 @@ function par = parElectrolyzer(N)
 %This script defines values of the input parameters for all electrolyzers.
 
 par.Const = struct('ze',2,'FC',96485,'R',8.314,'Cp',4.186,'CpLye',3.1006,...
-    'Mwt',18,'MwtH2',2.01588,'Tref',25,'rho',1000,'Vc',2.0681,'Vh',1.9944,...
-    'MassBt',15000000);
+    'Mwt',18,'MwtH2',2.01588,'Tref',25,'rho',1000,'rhoLye',1258.2,'Vc',2.0681,'Vh',1.9944);
 %Cp=specific heat of water, [J/gK];Mwt=mol. wt of H2O, rho=density of
 %water/lye[kg/m3],Vc=volume of cold side of heat exchanger[m3],Vh=volume of
-%hot side of heat exchanger[m3], MassBt=Mass of liquid in the buffer tank [g]
+%hot side of heat exchanger[m3]
 
 par.Comp = struct('alpha',0.63,'k',1.62,'Tel',25+273,'Pel',3);
 par.Storage = struct('VstoH2',965000,'VstoO2',482500,'PoutH2',19,'PoutO2',19,...
