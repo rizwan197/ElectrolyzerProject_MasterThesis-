@@ -192,6 +192,7 @@ end
 V_H2_ini
 Ps_ini
 Iden
+Eff_El = 3.55./Ps_ini
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
 x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];
