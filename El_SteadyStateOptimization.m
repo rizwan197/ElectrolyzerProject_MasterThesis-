@@ -64,8 +64,8 @@ ubPstoH2 = 30;
 lbPstoO2 = 20;%lower bound on the oxygen storage pressure
 ubPstoO2 = 30;
 
-lbMbt = 10000000;%lower bound on the mass in the buffer tank 
-ubMbt = 15000000;
+lbMbt = 0;%lower bound on the mass in the buffer tank 
+ubMbt = 6000000;
 
 lbT_bt_out = 0;%lower bound on the temperature of lye leaving the buffer tank 
 ubT_bt_out = inf;
