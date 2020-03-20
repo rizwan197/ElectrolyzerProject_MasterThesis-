@@ -1,4 +1,4 @@
-function [z0, x0, u0] = El_SteadyStateOptimization(N,X0)
+function [z0, x0, u0] = El_SteadyStateOptimization(N,X0,P0)
 
 import casadi.*
 par = parElectrolyzer(N);
@@ -6,6 +6,15 @@ par = parElectrolyzer(N);
 %% Build the plant model and solve steady state optimization problem
 [xDiff, xAlg, input, eqnAlg, eqnDiff] = model(par.N);
 x = [xAlg;xDiff]; 
+
+%% Defining the disturbance parameter
+Pnet = SX.sym('Pnet');
+Ptot = SX.zeros(1,1);
+
+for nEl = 1:par.N
+    Ptot = Ptot + xAlg(2*par.N+nEl);
+end
+eqnPnet = Pnet - Ptot;%Total power = sum of power of the individual electrolyzer
 
 %% preparing symbolic variables
 w = {};
@@ -117,22 +126,30 @@ end
 IdenMin = 32;   %minimum current density, 32 mA/cm2
 IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
-g = {g{:},eqnAlg, eqnDiff,uElconst, Iden};
-lbg = [lbg;zeros(7*par.N+11,1);zeros(2,1);IdenMin*ones(par.N,1)];
-ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1)];
+g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet};
+lbg = [lbg;zeros(7*par.N+11,1);zeros(2,1);IdenMin*ones(par.N,1);0];
+ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1);0];
 
 % Since we want to find optimal near the initial guess, we have to write:
-% J = ([x;input]-w0)'*([x;input]-w0); 
+% J = ([x;input]-w0)'*([x;input]-w0);
+% Objvol_H2 = SX.zeros(par.N,1);
+% for nEl = 1:par.N
+%     Objvol_H2(nEl) = (xAlg(4*par.N+nEl)*0.0224136*3600);%[Nm3/h]
+% end
+% J = (Objvol_H2(1)-485)^2+(Objvol_H2(2)-485)^2+(Objvol_H2(3)-485)^2;
+
 J = 10;
 
 %% formalize into an NLP problem
-nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J);
+nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J,'p',Pnet);
+
 
 % assign solver - IPOPT in this case
 solver = nlpsol('solver','ipopt',nlp);
 
+
 % solve - using the defined initial guess and bounds
-sol = solver('x0',w0,'lbx',lbw,'ubx',ubw,'lbg',lbg,'ubg',ubg);
+sol = solver('x0',w0,'lbx',lbw,'ubx',ubw,'lbg',lbg,'ubg',ubg,'p',P0);
 res = full(sol.x);
 
 %% Extracting results
@@ -193,6 +210,9 @@ V_H2_ini
 Ps_ini
 Iden
 Eff_El = 3.55./Ps_ini
+Tk
+Uk
+Pk
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
 x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];
