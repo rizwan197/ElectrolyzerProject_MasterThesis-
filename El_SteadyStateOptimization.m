@@ -136,7 +136,6 @@ ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1);0];
 
 % Since we want to find optimal near the initial guess, we have to write:
 % J = ([x;input]-w0)'*([x;input]-w0);
-
 % Objvol_H2 = SX.zeros(par.N,1);
 % for nEl = 1:par.N
 %     Objvol_H2(nEl) = (xAlg(4*par.N+nEl)*0.0224136*3600);%[Nm3/h]
