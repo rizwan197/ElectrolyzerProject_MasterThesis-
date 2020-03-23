@@ -20,13 +20,9 @@ len = length(tsamp);                    %number of simulation time steps
 tstep = 200;
 
 %% Initial guess for steady state optimization using IPOPT
-
-%disturbance is total power
-Pnet = 2135e3*par.N; %6.3MW total input power
-
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
-P_k0 = Pnet/par.N*ones(1,par.N);        %intial guess is power divided equally among electrolyzers 
+P_k0 = 2135000*ones(1,par.N);
 i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current
 Feff_k0 = 0.97*ones(1,par.N);
 nH2_k0 = 6*ones(1,par.N);               %[mol/s]
@@ -63,15 +59,14 @@ u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0];
 X_guess = [z_guess x_guess u_guess];
 
 
-
-%% Solve the steady state problem
-[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess,Pnet);
+%% Solve the steady state optimization problem
+[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess);
 
 T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer 
 %Initial value of the MVs 
 Vss = u0(1:par.N);
-q_lyek = u0(par.N+1:2*par.N)
-qf_cw = u0(2*par.N+1)
+q_lyek = u0(par.N+1:2*par.N);
+qf_cw = u0(2*par.N+1);
 zH2 = u0(2*par.N+2);
 zO2 = u0(2*par.N+3);
 Qwater = u0(2*par.N+4);
@@ -85,7 +80,7 @@ Qwater = u0(2*par.N+4);
 V_El = zeros(len,N);              %voltage across the electrolyzer, [Watt], len is the length of time vector
 for j = 1:N
     V_El(1:end,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
-%     V_El(tstep:end,j)=Vss(j)*1;
+    V_El(tstep:end,j)=Vss(j)*1;
 end
 
 qlye = zeros(len,N);                   %lye flowrate, [g/s]
