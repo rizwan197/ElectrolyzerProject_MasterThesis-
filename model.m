@@ -54,7 +54,6 @@ x = SX.sym('x',7*par.N+11);              %symbolic variables for cell voltage, c
 eqnAlg = SX.zeros(6*par.N+5,1);
 eqnDiff = SX.zeros(par.N+6,1);
 
-
 %variables for algebriac eqns.
 u_k=[];
 i_k=[];
@@ -86,8 +85,7 @@ for nEl = 1:par.N
     nH2_k = [nH2_k x(4*par.N+nEl)];             %hydrogen produced form each individual electrolyzer
     qH2Oloss_k = [qH2Oloss_k x(5*par.N+nEl)];   %water loss during electrolysis in kth electrolyzer
     T_k = [T_k x(6*par.N+5+nEl)];               %temperature of the individual electrolyzer
-end
-     
+end 
 
 %% Define inputs for the simulation (MVs for the dynamic simulation)
 

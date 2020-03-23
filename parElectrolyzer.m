@@ -26,7 +26,7 @@ par.TherMo = struct([]);
 par.EL = struct([]);
 for i =1:N
     %Vidar's Parameters
-    par.U(i).r1 = 0.000218155;           %ohm m^2
+    par.U(i).r1 = 0.000218155;         %ohm m^2
     par.U(i).r2 = -0.000000425;          %ohm m^2 C^-1
     par.U(i).s = 0.1179375;              %Vs
     par.U(i).t1 = -0.14529;              %A^-1 m^2
