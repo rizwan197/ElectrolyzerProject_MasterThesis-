@@ -54,6 +54,7 @@ x = SX.sym('x',7*par.N+11);              %symbolic variables for cell voltage, c
 eqnAlg = SX.zeros(6*par.N+5,1);
 eqnDiff = SX.zeros(par.N+6,1);
 
+
 %variables for algebriac eqns.
 u_k=[];
 i_k=[];
@@ -85,7 +86,8 @@ for nEl = 1:par.N
     nH2_k = [nH2_k x(4*par.N+nEl)];             %hydrogen produced form each individual electrolyzer
     qH2Oloss_k = [qH2Oloss_k x(5*par.N+nEl)];   %water loss during electrolysis in kth electrolyzer
     T_k = [T_k x(6*par.N+5+nEl)];               %temperature of the individual electrolyzer
-end 
+end
+     
 
 %% Define inputs for the simulation (MVs for the dynamic simulation)
 
@@ -113,12 +115,14 @@ for nEl = 1:par.N
     
     %model equations
     eqnAlg(nEl) = u_k(nEl)*i_k(nEl)*par.EL(nEl).nc - P_k(nEl);                        %power = nc*UI
-    eqnAlg(par.N+nEl) = u_k(nEl) - (par.U(nEl).r1+par.U(nEl).r2*T_k(nEl))*i_k(nEl)/par.EL(nEl).A - par.U(nEl).s*log10(((par.U(nEl).t1+par.U(nEl).t2/T_k(nEl)+...
-        par.U(nEl).t3/(T_k(nEl)^2))*i_k(nEl)/par.EL(nEl).A)+1) - par.EL(nEl).Urev;  %U-I relationship
+    eqnAlg(par.N+nEl) = u_k(nEl) - (par.U(nEl).r1+par.U(nEl).r2*T_k(nEl))*(i_k(nEl)*10^3)/par.EL(nEl).A -...
+        par.U(nEl).s*log10(((par.U(nEl).t1+par.U(nEl).t2/T_k(nEl)...
+        +par.U(nEl).t3/(T_k(nEl)^2))*(i_k(nEl)*10^3)/par.EL(nEl).A)+1) - par.EL(nEl).Urev;  %U-I relationship
     eqnAlg(2*par.N+nEl) = u_k(nEl)*par.EL(nEl).nc - U_El_k(nEl);                    %U(j).nc(j)=V
-    eqnAlg(3*par.N+nEl) = Feff_k(nEl) - ((.1*i_k(nEl)/par.EL(nEl).A)^2)/(par.U(nEl).f1+((.1*i_k(nEl)/par.EL(nEl).A)^2))*par.U(nEl).f2;     %faraday efficiency
-    eqnAlg(4*par.N+nEl) = nH2_k(nEl) - Feff_k(nEl)*par.EL(nEl).nc*i_k(nEl)/(par.Const.ze*par.Const.FC);%nH2, H2 production rate from individual electrolyzer
-    eqnAlg(5*par.N+nEl) = qH2Oloss_k(nEl) - nH2_k(nEl)*par.Const.Mwt;  %flowrate of water lost, [g/s]  
+    eqnAlg(3*par.N+nEl) = Feff_k(nEl) - ((100*i_k(nEl)/par.EL(nEl).A)^2)...
+        /(par.U(nEl).f1+((100*i_k(nEl)/par.EL(nEl).A)^2))*par.U(nEl).f2;     %faraday efficiency
+    eqnAlg(4*par.N+nEl) = nH2_k(nEl) - Feff_k(nEl)*par.EL(nEl).nc*i_k(nEl)/(par.Const.ze*par.Const.FC);%nH2, H2 production rate from individual electrolyzer [kmol/s]
+    eqnAlg(5*par.N+nEl) = qH2Oloss_k(nEl) - nH2_k(nEl)*par.Const.Mwt;  %flowrate of water lost, [kg/s]  
 end
 
 sum_H2net = SX.zeros(1,1);
@@ -140,11 +144,11 @@ eqnAlg(6*par.N+1) = nH2El_net - sum_H2net;                                      
 eqnAlg(6*par.N+2) = nH2out_net - par.kvalveH2*zH2*sqrt(Psto_H2-par.Storage.PoutH2);     %algebraic eqn for net hydrogen flowrate from the storage tank
 eqnAlg(6*par.N+3) = nO2El_net - nH2El_net/2;                                            %algebraic eqn for net oxygen flowrate from all the electrolyzers
 eqnAlg(6*par.N+4) = nO2out_net - par.kvalveO2*zO2*sqrt(Psto_O2-par.Storage.PoutO2);     %algebraic eqn for net oxygen flowrate from the storage tank
-eqnAlg(6*par.N+5) = T_El_out - (((qlyeT*par.Const.CpLye) - (qlossT*par.Const.Cp) + netqloss*(par.Const.Cp-par.Const.CpLye)*par.Const.Tref)/...
-    ((netqlye-netqloss)*par.Const.CpLye));                                          %calculation of Tout
+eqnAlg(6*par.N+5) = T_El_out - (((qlyeT*par.Const.CpLye) - (qlossT*par.Const.Cp) + netqloss*(par.Const.Cp-par.Const.CpLye)*par.Const.Tref)...
+    /((netqlye-netqloss)*par.Const.CpLye));                                          %calculation of Tout
 
 for nEl = 1:par.N
-    eqnDiff(nEl) = (q_lye_k(nEl)*par.Const.CpLye*(T_El_in-T_k(nEl)) + par.EL(nEl).nc*(u_k(nEl)-par.EL(nEl).Utn)*i_k(nEl) - ...
+    eqnDiff(nEl) = (q_lye_k(nEl)*par.Const.CpLye*(T_El_in-T_k(nEl)) + par.EL(nEl).nc*(u_k(nEl)-par.EL(nEl).Utn)*i_k(nEl)*10^3 - ...
         par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(T_k(nEl)-par.EL(nEl).Ta) + ...
         par.sigma*par.em*((T_k(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4)))/(par.TherMo(nEl).Ct*1000);%differential eqn for the electrolyzer temperature
 end
@@ -157,7 +161,8 @@ eqnDiff(par.N+3) = netqout + q_H2O - netqlye;    %differential eqn for mass of l
 %MV (constant parameter for intergration over time for dynamic states).
 eqnDiff(par.N+4) = (netqout*par.Const.CpLye*(T_El_out-T_bt_out) + ...
     q_H2O*(par.Const.Cp*T_bt_out - par.Const.CpLye*T_bt_out) ...
-    - (netqout*par.Const.CpLye+q_H2O*par.Const.Cp-netqlye*par.Const.CpLye)*par.Const.Tref)/(Mass_Bt*par.Const.CpLye);
+    - (netqout*par.Const.CpLye+q_H2O*par.Const.Cp-netqlye*par.Const.CpLye)*par.Const.Tref)...
+    /(Mass_Bt*par.Const.CpLye);
 %assuming T_H2O = T_bt_out
 
 %dynamic thermal balance for the heat exchanger, T_in and Tw_out are differential variables
@@ -165,10 +170,10 @@ deltaT1 = T_El_in - par.Tw_in;%difference in temperatures of hot and cold stream
 deltaT2 = T_bt_out - T_cw_out;%difference in temperatures of hot and cold streams at outlet
 deltaT_LMTD = (deltaT1-deltaT2)/log(deltaT1/deltaT2);
 
-eqnDiff(par.N+5) = ((netqlye*(T_bt_out-T_El_in))/(1000*par.Const.rhoLye*par.Const.Vh)) - ...
-    (par.Hex.UA*deltaT_LMTD/(1000*par.Const.rhoLye*par.Const.CpLye*par.Const.Vh));%differential eqn for the hot stream exit temp from heat exchanger
-eqnDiff(par.N+6) = ((q_cw*(par.Tw_in-T_cw_out))/(1000*par.Const.rho*par.Const.Vc)) + ...
-    (par.Hex.UA*deltaT_LMTD/(1000*par.Const.rho*par.Const.Cp*par.Const.Vc));%differential eqn for the cold stream exit temperature from heat exchanger
+eqnDiff(par.N+5) = ((netqlye*par.Const.CpLye*(T_bt_out-T_El_in)) - par.Hex.UA*deltaT_LMTD)...
+    /(par.Const.rhoLye*par.Const.CpLye*par.Const.Vh);%differential eqn for the hot stream exit temp from heat exchanger
+eqnDiff(par.N+6) = ((q_cw*par.Const.Cp*(par.Tw_in-T_cw_out)) + (par.Hex.UA*deltaT_LMTD))...
+    /(par.Const.rho*par.Const.Cp*par.Const.Vc);%differential eqn for the cold stream exit temperature from heat exchanger
 
 xDiff = x(6*par.N+6:end,1);
 xAlg = x(1:6*par.N+5,1);

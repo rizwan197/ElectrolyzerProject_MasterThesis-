@@ -18,44 +18,48 @@ tf = num_hr*60*60;                      %final, [s]
 tsamp = t0:ts:tf;
 len = length(tsamp);                    %number of simulation time steps
 tstep = 200;
-
 %% Initial guess for steady state solution using IPOPT
 
 %disturbance is total power
-Pnet = 2135e3*par.N; %6.3MW total input power
+Pnet = 2135*par.N; %6405 kW total input power
 
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
 P_k0 = Pnet/par.N*ones(1,par.N);        %intial guess is power divided equally among electrolyzers 
+i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current, [kA]
+%% Initial guess for steady state optimization using IPOPT
+%algebriac state variables('z')
+u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
+P_k0 = 2135000*ones(1,par.N);
 i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current
 Feff_k0 = 0.97*ones(1,par.N);
-nH2_k0 = 6*ones(1,par.N);               %[mol/s]
-qH2Oloss_k0 = nH2_k0*par.Const.Mwt.*ones(1,par.N);%[g/s]
-nH2El_net0 = sum(nH2_k0);               %[mol/s]
-nH2out_net0 = sum(nH2_k0);
-nO2El_net0 = 0.5*nH2El_net0;
-nO2out_net0 = 0.5*nH2out_net0;
+nH2_k0 = 6e-3*ones(1,par.N);                        %[kmol/s]
+qH2Oloss_k0 = nH2_k0*par.Const.Mwt.*ones(1,par.N);  %[kg/s]
+nH2El_net0 = sum(nH2_k0);                           %[kmol/s]
+nH2out_net0 = sum(nH2_k0);                          %[kmol/s]
+nO2El_net0 = 0.5*nH2El_net0;                        %[kmol/s]
+nO2out_net0 = 0.5*nH2out_net0;                      %[kmol/s]
 T_El_out0 = 80;                         %initial guess for the temperature of lye entering in the heat exchanger
 
 %differential state variables('x')
 T_k0 = 75*ones(1,par.N);
 Psto_H20 = 25;        %initial H2 storage pressure (calculated from steady state solution) [bar]
 Psto_O20 = 25;        %initial O2 storage pressure (calculated from steady state solution) [bar]
-Mass_Bt0 = 6000000;  %mass of the liquid in the buffer tank,[g] 6000kg
+Mass_Bt0 = 6000;      %mass of the liquid in the buffer tank,[kg] 6000kg
 T_bt_out0 = 70;       %Initial guess for the temperature of lye mixture at the exit of the buffer tank,[degC]
-T_El_in0 = 65;        %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
-T_cw_out0 = 20;       %initial guess for the exit temperature of the cooling water leaving heat exchanger,[deg C]
+T_El_in0 = 65;        %initial guess for the temperature of inlet lye into the electrolyzer, [degC]
+T_cw_out0 = 20;       %initial guess for the exit temperature of the cooling water leaving heat exchanger,[degC]
 
 z_guess = [u_k0 i_k0 P_k0 Feff_k0 nH2_k0 qH2Oloss_k0 nH2El_net0 nH2out_net0 nO2El_net0 nO2out_net0 T_El_out0];
 x_guess = [T_k0 Psto_H20 Psto_O20 Mass_Bt0 T_bt_out0 T_El_in0 T_cw_out0];
 
 %initial guess for input variables('u')
-U_El_k_0 = 414.0301*ones(1,par.N);      %voltage across electrolyzers, [Volts]
-q_lye_k_0 = 6648*ones(1,par.N);         %lye flowrate, [g/s]
-q_cw_0 = 2.0698e4;                      %cooling water flow rate, [g/s]
+U_El_k_0 = 414.0301*ones(1,par.N);          %voltage across electrolyzers, [Volts]
+q_lye_k_0 = 6.648*ones(1,par.N);            %lye flowrate, [kg/s]
+q_cw_0 = 20.698;                          %cooling water flow rate, [kg/s]
 zH2_0 = 0.4;
 zO2_0 = 0.4;
-q_H2O_0 = 324.2657;                     %total water lost during electrolysis, [grams/sec]
+q_H2O_0 = 0.324;                        %total water lost during electrolysis, [kg/sec]
 
 u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0]; 
 
@@ -63,15 +67,14 @@ u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0];
 X_guess = [z_guess x_guess u_guess];
 
 
-
-%% Solve the steady state problem
-[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess,Pnet);
+%% Solve the steady state optimization problem
+[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess);
 
 T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer 
 %Initial value of the MVs 
 Vss = u0(1:par.N);
-q_lyek = u0(par.N+1:2*par.N)
-qf_cw = u0(2*par.N+1)
+q_lyek = u0(par.N+1:2*par.N);
+qf_cw = u0(2*par.N+1);
 zH2 = u0(2*par.N+2);
 zO2 = u0(2*par.N+3);
 Qwater = u0(2*par.N+4);
@@ -85,7 +88,7 @@ Qwater = u0(2*par.N+4);
 V_El = zeros(len,N);              %voltage across the electrolyzer, [Watt], len is the length of time vector
 for j = 1:N
     V_El(1:end,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
-%     V_El(tstep:end,j)=Vss(j)*1;
+    V_El(tstep:end,j)=Vss(j)*1;
 end
 
 qlye = zeros(len,N);                   %lye flowrate, [g/s]

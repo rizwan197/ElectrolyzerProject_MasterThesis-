@@ -1,4 +1,4 @@
-function [z0, x0, u0] = El_SteadyStateOptimization(N,X0,P0)
+function [z0, x0, u0] = El_SteadyStateOptimization(N,X0)
 
 import casadi.*
 par = parElectrolyzer(N);
@@ -15,7 +15,6 @@ for nEl = 1:par.N
     Ptot = Ptot + xAlg(2*par.N+nEl);
 end
 eqnPnet = Pnet - Ptot;%Total power = sum of power of the individual electrolyzer
-
 %% preparing symbolic variables
 w = {};
 % preparing numeric variables and bounds
@@ -74,7 +73,7 @@ lbPstoO2 = 20;%lower bound on the oxygen storage pressure
 ubPstoO2 = 30;
 
 lbMbt = 0;%lower bound on the mass in the buffer tank 
-ubMbt = 6000000;
+ubMbt = 6000;
 
 lbT_bt_out = 0;%lower bound on the temperature of lye leaving the buffer tank 
 ubT_bt_out = inf;
@@ -121,14 +120,15 @@ uElconst = [xAlg(1)-xAlg(2);xAlg(2)-xAlg(3)];
 
 Iden = SX.zeros(par.N,1);
 for nEl = 1:par.N
-    Iden(nEl) = (0.1*xAlg(par.N+nEl))/par.EL(nEl).A; %current density in mA/cm2
+    Iden(nEl) = (100*xAlg(par.N+nEl))/par.EL(nEl).A; %current density in mA/cm2
 end
 IdenMin = 32;   %minimum current density, 32 mA/cm2
 IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
+<<<<<<< HEAD
 g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet};
 lbg = [lbg;zeros(7*par.N+11,1);zeros(2,1);IdenMin*ones(par.N,1);0];
-ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1);0];
+ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1);P0];
 
 % g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet};
 % lbg = [lbg;zeros(7*par.N+11,1);IdenMin*ones(par.N,1);0];
@@ -143,18 +143,23 @@ ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1);0];
 % end
 % J = (Objvol_H2(1)-485)^2+(Objvol_H2(2)-485)^2+(Objvol_H2(3)-485)^2;
 
+g = {g{:},eqnAlg, eqnDiff,uElconst, Iden};
+lbg = [lbg;zeros(7*par.N+11,1);zeros(2,1);IdenMin*ones(par.N,1)];
+ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1)];
+
+% Since we want to find optimal near the initial guess, we have to write:
+% J = ([x;input]-w0)'*([x;input]-w0); 
+
 J = 10;
 
 %% formalize into an NLP problem
-nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J,'p',Pnet);
-
+nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J);
 
 % assign solver - IPOPT in this case
 solver = nlpsol('solver','ipopt',nlp);
 
-
 % solve - using the defined initial guess and bounds
-sol = solver('x0',w0,'lbx',lbw,'ubx',ubw,'lbg',lbg,'ubg',ubg,'p',P0);
+sol = solver('x0',w0,'lbx',lbw,'ubx',ubw,'lbg',lbg,'ubg',ubg);
 res = full(sol.x);
 
 %% Extracting results
@@ -206,20 +211,22 @@ Qwater=res(9*par.N+15);
 %% Calculation of initial state vector
 
 %Nominal load H2 production and specific electricity consumption
-V_H2_ini = nH2k*0.0224136*3600;%[Nm3/h]
+V_H2_ini = nH2k*22.4136*3600;%[Nm3/h]
 for nEl = 1:par.N
-    Ps_ini(nEl) = (Uk(nEl)*Ik(nEl)*par.EL(nEl).nc)/(1000*V_H2_ini(nEl));%[kWh/Nm3]
-    Iden(nEl) = 0.1*Ik(nEl)/par.EL(nEl).A; 
+    Ps_ini(nEl) = (Uk(nEl)*Ik(nEl)*par.EL(nEl).nc)/(V_H2_ini(nEl));%[kWh/Nm3]
+    Iden(nEl) = 100*Ik(nEl)/par.EL(nEl).A; 
 end
 
 V_H2_ini
 Ps_ini
 Iden
 Eff_El = 3.55./Ps_ini
+<<<<<<< HEAD
 Tk
 Uk
 Pk
 Pnet = sum(Pk)
+
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
 x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];
