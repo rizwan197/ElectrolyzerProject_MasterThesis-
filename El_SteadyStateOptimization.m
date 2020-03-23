@@ -7,7 +7,7 @@ par = parElectrolyzer(N);
 [xDiff, xAlg, input, eqnAlg, eqnDiff] = model(par.N);
 x = [xAlg;xDiff]; 
 
-%% Defining the disturbance
+%% Defining the disturbance parameter
 Pnet = SX.sym('Pnet');
 Ptot = SX.zeros(1,1);
 
@@ -130,10 +130,6 @@ g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet};
 lbg = [lbg;zeros(7*par.N+11,1);zeros(2,1);IdenMin*ones(par.N,1);0];
 ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1);0];
 
-% g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet};
-% lbg = [lbg;zeros(7*par.N+11,1);IdenMin*ones(par.N,1);0];
-% ubg = [ubg;zeros(7*par.N+11,1);IdenMax*ones(par.N,1);0];
-
 % Since we want to find optimal near the initial guess, we have to write:
 % J = ([x;input]-w0)'*([x;input]-w0);
 % Objvol_H2 = SX.zeros(par.N,1);
@@ -210,7 +206,6 @@ for nEl = 1:par.N
     Ps_ini(nEl) = (Uk(nEl)*Ik(nEl)*par.EL(nEl).nc)/(1000*V_H2_ini(nEl));%[kWh/Nm3]
     Iden(nEl) = 0.1*Ik(nEl)/par.EL(nEl).A; 
 end
-
 V_H2_ini
 Ps_ini
 Iden
@@ -218,7 +213,6 @@ Eff_El = 3.55./Ps_ini
 Tk
 Uk
 Pk
-Pnet = sum(Pk)
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
 x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];

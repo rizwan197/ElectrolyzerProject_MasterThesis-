@@ -19,7 +19,7 @@ tsamp = t0:ts:tf;
 len = length(tsamp);                    %number of simulation time steps
 tstep = 200;
 
-%% Initial guess for steady state solution using IPOPT
+%% Initial guess for steady state optimization using IPOPT
 
 %disturbance is total power
 Pnet = 2135e3*par.N; %6.3MW total input power
