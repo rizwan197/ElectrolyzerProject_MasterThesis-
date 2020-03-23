@@ -18,12 +18,16 @@ tf = num_hr*60*60;                      %final, [s]
 tsamp = t0:ts:tf;
 len = length(tsamp);                    %number of simulation time steps
 tstep = 200;
-
 %% Initial guess for steady state solution using IPOPT
 
 %disturbance is total power
 Pnet = 2135*par.N; %6405 kW total input power
 
+%algebriac state variables('z')
+u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
+P_k0 = Pnet/par.N*ones(1,par.N);        %intial guess is power divided equally among electrolyzers 
+i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current, [kA]
+%% Initial guess for steady state optimization using IPOPT
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
 P_k0 = 2135000*ones(1,par.N);
@@ -64,7 +68,7 @@ X_guess = [z_guess x_guess u_guess];
 
 
 %% Solve the steady state optimization problem
-[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess,Pnet);
+[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess);
 
 T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer 
 %Initial value of the MVs 

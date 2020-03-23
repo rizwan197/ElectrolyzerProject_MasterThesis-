@@ -1,4 +1,4 @@
-function [z0, x0, u0] = El_SteadyStateOptimization(N,X0,P0)
+function [z0, x0, u0] = El_SteadyStateOptimization(N,X0)
 
 import casadi.*
 par = parElectrolyzer(N);
@@ -15,7 +15,6 @@ for nEl = 1:par.N
     Ptot = Ptot + xAlg(2*par.N+nEl);
 end
 eqnPnet = Pnet - Ptot;%Total power = sum of power of the individual electrolyzer
-
 %% preparing symbolic variables
 w = {};
 % preparing numeric variables and bounds
@@ -126,6 +125,7 @@ end
 IdenMin = 32;   %minimum current density, 32 mA/cm2
 IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
+<<<<<<< HEAD
 g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet};
 lbg = [lbg;zeros(7*par.N+11,1);zeros(2,1);IdenMin*ones(par.N,1);0];
 ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1);P0];
@@ -221,6 +221,7 @@ V_H2_ini
 Ps_ini
 Iden
 Eff_El = 3.55./Ps_ini
+<<<<<<< HEAD
 Tk
 Uk
 Pk
