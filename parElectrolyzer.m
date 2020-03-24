@@ -61,9 +61,9 @@ for i =1:N
     
 end
 %El #2, performing at 85% of electrolyzer 1 
-par.U(2).r1 = par.U(2).r1*1.15;             %ohm m^2
-par.U(2).s = par.U(2).s*1.15;               %V
-par.U(2).f1 = par.U(2).f1*1.15;             %mA^2 cm^-4
+par.U(2).r1 = par.U(2).r1*1.2;             %ohm m^2
+par.U(2).s = par.U(2).s*1.2;               %V
+par.U(2).f1 = par.U(2).f1*1.2;             %mA^2 cm^-4
 par.U(2).f2 = 0.97;
 
 %El #3, performing at 70% of electrolyzer 1

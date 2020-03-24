@@ -137,13 +137,13 @@ ubg = [ubg;zeros(7*par.N+11,1);zeros(2,1);IdenMax*ones(par.N,1);P0];
 % Since we want to find optimal near the initial guess, we have to write:
 % J = ([x;input]-w0)'*([x;input]-w0);
 
-% Objvol_H2 = SX.zeros(par.N,1);
-% for nEl = 1:par.N
-%     Objvol_H2(nEl) = (xAlg(4*par.N+nEl)*0.0224136*3600);%[Nm3/h]
-% end
-% J = (Objvol_H2(1)-485)^2+(Objvol_H2(2)-485)^2+(Objvol_H2(3)-485)^2;
+Objvol_H2 = SX.zeros(par.N,1);
+for nEl = 1:par.N
+    Objvol_H2(nEl) = (xAlg(4*par.N+nEl)*0.0224136*3600);%[Nm3/h]
+end
+J = -(Objvol_H2(1)+Objvol_H2(2)+Objvol_H2(3));
 
-J = 10;
+% J = 10;
 
 %% formalize into an NLP problem
 nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J,'p',Pnet);
@@ -212,13 +212,13 @@ for nEl = 1:par.N
     Iden(nEl) = 0.1*Ik(nEl)/par.EL(nEl).A; 
 end
 
-V_H2_ini
-Ps_ini
+V_H2_ini;
+Ps_ini;
 Iden
-Eff_El = 3.55./Ps_ini
+Eff_El = 3.55./Ps_ini;
 Tk
-Uk
-Pk
+Uk;
+Pk;
 Pnet = sum(Pk)
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];

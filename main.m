@@ -70,8 +70,10 @@ X_guess = [z_guess x_guess u_guess];
 T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer 
 %Initial value of the MVs 
 Vss = u0(1:par.N);
-q_lyek = u0(par.N+1:2*par.N)
-qf_cw = u0(2*par.N+1)
+q_lyek = u0(par.N+1:2*par.N);
+qlye_kgs = q_lyek/1000 
+qf_cw = u0(2*par.N+1);
+qcw_kgs = qf_cw/1000
 zH2 = u0(2*par.N+2);
 zO2 = u0(2*par.N+3);
 Qwater = u0(2*par.N+4);
