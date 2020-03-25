@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = .25;                             %no. of hours
+num_hr = .25;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -22,7 +22,7 @@ tstep = 200;
 %% Initial guess for steady state solution using IPOPT
 
 %disturbance is total power
-Pnet = 2135e3*par.N; %6.3MW total input power
+Pnet = 9e6;%1900e3*par.N; %6.3MW total input power
 
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
