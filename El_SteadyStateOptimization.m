@@ -88,9 +88,9 @@ ubT_cw_out = inf;
 %constraints on the inputs
 lbU_el_k = zeros(par.N,1);%lower bound on the electrolyzer voltage
 ubU_el_k = inf*ones(par.N,1);
-lbq_lye_k = zeros(par.N,1);%lower bound on the lye flowrate
+lbq_lye_k = 500*ones(par.N,1);%lower bound on the lye flowrate
 ubq_lye_k = 8000*ones(par.N,1);
-lbq_cw = 0;%lower bound on the coolant flow rate
+lbq_cw = 1500;%lower bound on the coolant flow rate
 ubq_cw = 80000;
 lbzH2 = 0;%lower bound on hydrogen outlet valve opening
 ubzH2 = 1;
@@ -116,11 +116,6 @@ lbg = [];
 ubg = [];
 
 % declaring constraints
-uElconst = [];
-for nEl = 1:par.N-1
-    uElconst = [uElconst;xAlg(nEl)-xAlg(nEl+1)];
-    %electrolyzers operating across same voltage
-end
 
 Iden = SX.zeros(par.N,1);
 for nEl = 1:par.N
@@ -129,16 +124,10 @@ end
 IdenMin = 32;   %minimum current density, 32 mA/cm2
 IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
-g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet};
-lbg = [lbg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMin*ones(par.N,1);0];
-ubg = [ubg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMax*ones(par.N,1);P0];
+g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet};
+lbg = [lbg;zeros(7*par.N+11,1);IdenMin*ones(par.N,1);0];
+ubg = [ubg;zeros(7*par.N+11,1);IdenMax*ones(par.N,1);P0];
 
-% g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet};
-% lbg = [lbg;zeros(7*par.N+11,1);IdenMin*ones(par.N,1);0];
-% ubg = [ubg;zeros(7*par.N+11,1);IdenMax*ones(par.N,1);0];
-
-% Since we want to find optimal near the initial guess, we have to write:
-% J = ([x;input]-w0)'*([x;input]-w0);
 
 Objvol_H2 = SX.zeros(par.N,1);
 for nEl = 1:par.N
@@ -223,7 +212,7 @@ T_el_in
 V_H2_ini
 Ps_ini;
 
-Eff_El = 3.55./Ps_ini;
+Eff_El = 3.55./Ps_ini
 
 
 

@@ -22,7 +22,7 @@ tstep = 200;
 %% Initial guess for steady state solution using IPOPT
 
 %disturbance is total power
-Pnet = 9e6;%1900e3*par.N; %6.3MW total input power
+Pnet = 1e6;%1900e3*par.N; %6.3MW total input power
 
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
