@@ -212,7 +212,7 @@ T_el_in
 V_H2_ini
 Ps_ini;
 
-Eff_El = 3.55./Ps_ini
+Eff_El = 3.55./Ps_ini;
 
 
 
