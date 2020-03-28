@@ -22,7 +22,7 @@ tstep = 200;
 %% Initial guess for steady state solution using IPOPT
 
 %disturbance is total power
-Pnet = 6e6;%1900e3*par.N; %6.3MW total input power
+Pnet = 9e6;%1900e3*par.N; %6.3MW total input power
 
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
@@ -59,7 +59,10 @@ q_H2O_0 = 324.2657;                     %total water lost during electrolysis, [
 
 u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0]; 
 
-%initial guess vector for the IPOPT
+% z_guess = [1.64914382696133,1.64914382696133,1.64914382696133,1436.98931662721,894.707646831791,831.999991899820,545054.474012782,339365.366322788,315580.159654897,0.942956458291752,0.864833074000270,0.833084743618188,1.61503975758028,0.922255976806770,0.826134088131333,29.0707156364450,16.6006075825219,14.8704135863640,3.36342982251838,3.36342982251838,1.68171491125919,1.68171491125919,29.0401909785640];
+% x_guess = [28.5593445547241,29.5481048814220,34.5546070346873,23.9292138389395,23.9292020994336,3001078.93704814,29.0480211719569,26.7987971517601,28.3544611288207];
+% u_guess = [379.303080201107,379.303080201107,379.303080201107,8000,2516.97596336600,500,1000,0.102895700700712,0.102888834923687,60.5417368053311];
+
 X_guess = [z_guess x_guess u_guess];
 
 
@@ -68,15 +71,23 @@ X_guess = [z_guess x_guess u_guess];
 [z0, x0, u0] = El_SteadyStateOptimization(N,X_guess,Pnet);
 
 T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer 
+
 %Initial value of the MVs 
 Vss = u0(1:par.N);
 q_lyek = u0(par.N+1:2*par.N);
-qlye_kgs = q_lyek/1000 
+qlye_kgs = q_lyek/1000; 
 qf_cw = u0(2*par.N+1);
-qcw_kgs = qf_cw/1000
+qcw_kgs = qf_cw/1000;
 zH2 = u0(2*par.N+2);
 zO2 = u0(2*par.N+3);
 Qwater = u0(2*par.N+4);
+
+Pcons = sum(z0(2*par.N+1:3*par.N));
+Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
+Tk = x0(1:par.N);
+V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
+
+row = [Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,V_H2_ini];
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);

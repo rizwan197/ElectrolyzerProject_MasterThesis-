@@ -90,7 +90,7 @@ lbU_el_k = zeros(par.N,1);%lower bound on the electrolyzer voltage
 ubU_el_k = inf*ones(par.N,1);
 lbq_lye_k = 500*ones(par.N,1);%lower bound on the lye flowrate
 ubq_lye_k = 8000*ones(par.N,1);
-lbq_cw = 1500;%lower bound on the coolant flow rate
+lbq_cw = 0.01000;%lower bound on the coolant flow rate
 ubq_cw = 80000;
 lbzH2 = 0;%lower bound on hydrogen outlet valve opening
 ubzH2 = 1;
@@ -116,6 +116,13 @@ lbg = [];
 ubg = [];
 
 % declaring constraints
+uElconst = [];
+for nEl=1:par.N-1
+    uElconst = [uElconst;xAlg(nEl)-xAlg(nEl+1)];
+end
+
+deltaT1 = xDiff(par.N+5)-par.Tw_in;
+deltaT2 = xDiff(par.N+4)-xDiff(par.N+6);
 
 Iden = SX.zeros(par.N,1);
 for nEl = 1:par.N
@@ -124,9 +131,9 @@ end
 IdenMin = 32;   %minimum current density, 32 mA/cm2
 IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
-g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet};
-lbg = [lbg;zeros(7*par.N+11,1);IdenMin*ones(par.N,1);0];
-ubg = [ubg;zeros(7*par.N+11,1);IdenMax*ones(par.N,1);P0];
+g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet};
+lbg = [lbg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMin*ones(par.N,1);0];
+ubg = [ubg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMax*ones(par.N,1);P0];
 
 
 Objvol_H2 = SX.zeros(par.N,1);
@@ -203,18 +210,10 @@ for nEl = 1:par.N
     Ps_ini(nEl) = (Uk(nEl)*Ik(nEl)*par.EL(nEl).nc)/(1000*V_H2_ini(nEl));%[kWh/Nm3]
     Iden(nEl) = 0.1*Ik(nEl)/par.EL(nEl).A; 
 end
-Pnet = sum(Pk)
 
-Iden
-Tk
-T_el_in
-
-V_H2_ini
+Pnet = sum(Pk);
 Ps_ini;
-
 Eff_El = 3.55./Ps_ini;
-
-
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
 x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];
