@@ -46,67 +46,16 @@ ubFeff_k = 1*ones(par.N,1);
 lbnH2_k = zeros(par.N,1);%lower bound on hydrogen production
 ubnH2_k = inf*ones(par.N,1);
 
-lbqH2Oloss_k = zeros(par.N,1);%lower bound on water loss
-ubqH2Oloss_k = inf*ones(par.N,1);
-
-lbnH2el_net = 0;%lower bound on net hydrogen production from the electrolyzer
-ubnH2el_net = inf;
-
-lbnH2out_net = 0;%lower bound on hydrogen from the storage tank outlet 
-ubnH2out_net = inf;
-
-lbnO2el_net = 0;%lower bound on net oxygen production from the electrolyzer
-ubnO2el_net = inf;
-
-lbnO2out_net = 0;%lower bound on oxygen from the storage tank outlet
-ubnO2out_net = inf;
-
-lbT_el_out = 0;%lower bound on the temperature at electrolyzer outlet
-ubT_el_out = inf;
 
 lbT_k = 25*ones(par.N,1);%lower bound on the electrolyzer temperature
 ubT_k = 80*ones(par.N,1);
 
-lbPstoH2 = 20;%lower bound on the hydrogen storage pressure
-ubPstoH2 = 30;
-
-lbPstoO2 = 20;%lower bound on the oxygen storage pressure
-ubPstoO2 = 30;
-
-lbMbt = 0;%lower bound on the mass in the buffer tank 
-ubMbt = 6000000;
-
-lbT_bt_out = 0;%lower bound on the temperature of lye leaving the buffer tank 
-ubT_bt_out = inf;
-
-lbT_el_in = 0;%lower bound on the temperature at electrolyzer inlet
-ubT_el_in = inf;
-
-lbT_cw_out = 0;%lower bound on the coolant outlet temperature
-ubT_cw_out = inf;
-
 %constraints on the inputs
-lbU_el_k = zeros(par.N,1);%lower bound on the electrolyzer voltage
-ubU_el_k = inf*ones(par.N,1);
 lbq_lye_k = 500*ones(par.N,1);%lower bound on the lye flowrate
 ubq_lye_k = 8000*ones(par.N,1);
-lbq_cw = 1500;%lower bound on the coolant flow rate
-ubq_cw = 80000;
-lbzH2 = 0;%lower bound on hydrogen outlet valve opening
-ubzH2 = 1;
-lbzO2 = 0;%lower bound on oxygen outlet valve opening
-ubzO2 = 1;
-lbqH2O = 0;%lower bound on total water lost during electrolysis
-ubqH2O = inf;
 
-lbw = [lbw;lbu_k;lbi_k;lbP_k;lbFeff_k;lbnH2_k;lbqH2Oloss_k;lbnH2el_net;...
-    lbnH2out_net;lbnO2el_net;lbnO2out_net;lbT_el_out;lbT_k;lbPstoH2;...
-    lbPstoO2;lbMbt;lbT_bt_out;lbT_el_in;lbT_cw_out;lbU_el_k;lbq_lye_k;...
-    lbq_cw;lbzH2;lbzO2;lbqH2O];%bounds on all the variables
-ubw = [ubw;ubu_k;ubi_k;ubP_k;ubFeff_k;ubnH2_k;ubqH2Oloss_k;ubnH2el_net;...
-    ubnH2out_net;ubnO2el_net;ubnO2out_net;ubT_el_out;ubT_k;ubPstoH2;...
-    ubPstoO2;ubMbt;ubT_bt_out;ubT_el_in;ubT_cw_out;ubU_el_k;ubq_lye_k;...
-    ubq_cw;ubzH2;ubzO2;ubqH2O]; 
+lbw = [lbw;lbu_k;lbi_k;lbP_k;lbFeff_k;lbnH2_k;lbT_k;lbq_lye_k];%bounds on all the variables
+ubw = [ubw;ubu_k;ubi_k;ubP_k;ubFeff_k;ubnH2_k;ubT_k;ubq_lye_k]; 
  
 
 %% preparing symbolic constraints
@@ -155,9 +104,9 @@ Ik = [];
 Pk = [];
 Feffk = [];
 nH2k = [];
-qH2Olossk = [];
+
 Tk = [];
-Vss = [];
+
 q_lyek = [];
 
 for nEl = 1:par.N
@@ -167,32 +116,14 @@ for nEl = 1:par.N
     Pk = [Pk res(2*par.N+nEl)];                 %power of the individual electrolyzer
     Feffk = [Feffk res(3*par.N+nEl)];           %faraday efficiency of each electrolyzer
     nH2k = [nH2k res(4*par.N+nEl)];             %hydrogen produced form each individual electrolyzer
-    qH2Olossk = [qH2Olossk res(5*par.N+nEl)];   %water loss during electrolysis in kth electrolyzer
+    
     %optimal value of the differential state
-    Tk = [Tk res(6*par.N+5+nEl)];               %temperature of the individual electrolyzer
+    Tk = [Tk res(5*par.N+nEl)];               %temperature of the individual electrolyzer
+    
     %optimal value of the inputs
-    Vss = [Vss res(7*par.N+11+nEl)];            %electrolyzer voltage
-    q_lyek = [q_lyek res(8*par.N+11+nEl)];      %lye flowrate
+    q_lyek = [q_lyek res(6*par.N+nEl)];      %lye flowrate
 end
 
-%optimal value of the algebriac state
-nH2El_tot=res(6*par.N+1);
-nH2out_tot=res(6*par.N+2);
-nO2El_tot=res(6*par.N+3);
-nO2out_tot=res(6*par.N+4);
-T_el_out=res(6*par.N+5);        %temp after mixing of the exiting liquid streams from all electrolyzers
-%optimal value of the differential state
-PstoH2=res(7*par.N+6);
-PstoO2=res(7*par.N+7);
-massBt=res(7*par.N+8);
-T_bt_out=res(7*par.N+9);
-T_el_in=res(7*par.N+10);         %temp of inlet lye stream coming into the electrolyzer
-T_CW_out=res(7*par.N+11);
-%optimal value of the inputs
-qf_cw=res(9*par.N+12);
-zH2=res(9*par.N+13);
-zO2=res(9*par.N+14);
-Qwater=res(9*par.N+15);
 
 
 %% Calculation of initial state vector
@@ -216,8 +147,8 @@ Eff_El = 3.55./Ps_ini
 
 
 
-z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
-x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];
-u0 = [Vss q_lyek qf_cw zH2 zO2 Qwater];
+z0 = [Uk Ik Pk Feffk nH2k];
+x0 = [Tk];
+u0 = [q_lyek];
 
 end
