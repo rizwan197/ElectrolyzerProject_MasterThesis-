@@ -1,4 +1,4 @@
-function [z0, x0, u0] = El_SteadyStateOptimization(N,X0,P0)
+function [z0, x0, u0,EXIT] = El_SteadyStateOptimization(N,X0,P0)
 
 import casadi.*
 par = parElectrolyzer(N);
@@ -64,7 +64,7 @@ ubnO2out_net = inf;
 lbT_el_out = 0;%lower bound on the temperature at electrolyzer outlet
 ubT_el_out = inf;
 
-lbT_k = 25*ones(par.N,1);%lower bound on the electrolyzer temperature
+lbT_k = 20*ones(par.N,1);%lower bound on the electrolyzer temperature
 ubT_k = 80*ones(par.N,1);
 
 lbPstoH2 = 20;%lower bound on the hydrogen storage pressure
@@ -89,8 +89,8 @@ ubT_cw_out = inf;
 lbU_el_k = zeros(par.N,1);%lower bound on the electrolyzer voltage
 ubU_el_k = inf*ones(par.N,1);
 lbq_lye_k = 500*ones(par.N,1);%lower bound on the lye flowrate
-ubq_lye_k = 8000*ones(par.N,1);
-lbq_cw = 0.01000;%lower bound on the coolant flow rate
+ubq_lye_k = 10000*ones(par.N,1);
+lbq_cw = 0.01;%lower bound on the coolant flow rate
 ubq_cw = 80000;
 lbzH2 = 0;%lower bound on hydrogen outlet valve opening
 ubzH2 = 1;
@@ -124,17 +124,24 @@ end
 deltaT1 = xDiff(par.N+5)-par.Tw_in;
 deltaT2 = xDiff(par.N+4)-xDiff(par.N+6);
 
+deltaT_El1 = xDiff(1) - xDiff(par.N+5);%impose the connstraint on the maximum temperature difference between the inlet lye temp. and the electrolyzer temp.
+deltaT_El2 = xDiff(2) - xDiff(par.N+5);
+deltaT_El3 = xDiff(3) - xDiff(par.N+5);
+
 Iden = SX.zeros(par.N,1);
 for nEl = 1:par.N
     Iden(nEl) = (0.1*xAlg(par.N+nEl))/par.EL(nEl).A; %current density in mA/cm2
 end
-IdenMin = 32;   %minimum current density, 32 mA/cm2
+IdenMin = 10;   %minimum current density, 32 mA/cm2
 IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
-g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet};
-lbg = [lbg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMin*ones(par.N,1);0];
-ubg = [ubg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMax*ones(par.N,1);P0];
+g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet,deltaT_El1,deltaT_El2,deltaT_El3,deltaT1,deltaT2};
+lbg = [lbg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMin*ones(par.N,1);0;0;0;0;2e-3;2e-3];
+ubg = [ubg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMax*ones(par.N,1);P0;30;30;30;inf;inf];
 
+% g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet};
+% lbg = [lbg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMin*ones(par.N,1);0];
+% ubg = [ubg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMax*ones(par.N,1);P0];
 
 Objvol_H2 = SX.zeros(par.N,1);
 for nEl = 1:par.N
@@ -147,14 +154,17 @@ J = -(Objvol_H2(1)+Objvol_H2(2)+Objvol_H2(3));
 %% formalize into an NLP problem
 nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J,'p',Pnet);
 
+options = struct;
+options.ipopt.print_level = 0;
 
 % assign solver - IPOPT in this case
-solver = nlpsol('solver','ipopt',nlp);
-
+solver = nlpsol('solver','ipopt',nlp,options);
 
 % solve - using the defined initial guess and bounds
 sol = solver('x0',w0,'lbx',lbw,'ubx',ubw,'lbg',lbg,'ubg',ubg,'p',P0);
 res = full(sol.x);
+
+EXIT = solver.stats.return_status; 
 
 %% Extracting results
 Uk = [];
