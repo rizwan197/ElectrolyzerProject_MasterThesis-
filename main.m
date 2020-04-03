@@ -62,7 +62,7 @@ u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0];
 counter = 1;
 flag = {};
 
-for Pnet = 9e6:-0.3e6:0.6e6
+for Pnet = 9e6:-0.1e6:0.6e6
     
 X_guess = [z_guess x_guess u_guess];
 

@@ -64,7 +64,7 @@ ubnO2out_net = inf;
 lbT_el_out = 0;%lower bound on the temperature at electrolyzer outlet
 ubT_el_out = inf;
 
-lbT_k = 20*ones(par.N,1);%lower bound on the electrolyzer temperature
+lbT_k = 25*ones(par.N,1);%lower bound on the electrolyzer temperature
 ubT_k = 80*ones(par.N,1);
 
 lbPstoH2 = 20;%lower bound on the hydrogen storage pressure
@@ -132,7 +132,7 @@ Iden = SX.zeros(par.N,1);
 for nEl = 1:par.N
     Iden(nEl) = (0.1*xAlg(par.N+nEl))/par.EL(nEl).A; %current density in mA/cm2
 end
-IdenMin = 10;   %minimum current density, 32 mA/cm2
+IdenMin = 32;   %minimum current density, 32 mA/cm2
 IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
 g = {g{:},eqnAlg, eqnDiff,uElconst, Iden,eqnPnet,deltaT_El1,deltaT_El2,deltaT_El3,deltaT1,deltaT2};
