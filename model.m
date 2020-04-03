@@ -134,9 +134,7 @@ deltaT1 = T_El_in_k - par.Tw_in_k*ones(1,par.N);%difference in temperatures of h
 deltaT2 = T_bt_out_k - T_cw_out_k;%difference in temperatures of hot and cold streams at outlet
 deltaT_LMTD = (deltaT1-deltaT2)./log(deltaT1./deltaT2);
 
-for nEl=1:par.N
-    
-    
+for nEl=1:par.N  
     eqnDiff(3*par.N+nEl) = ((q_lye_k(nEl)*(T_bt_out_k(nEl)-T_El_in_k(nEl)))/(1000*par.Const.rhoLye*par.Const.Vhk)) - ...
         (par.Hex.UAk*deltaT_LMTD(nEl)/(1000*par.Const.rhoLye*par.Const.CpLye*par.Const.Vhk));%differential eqn for the hot stream exit temp from heat exchanger
     

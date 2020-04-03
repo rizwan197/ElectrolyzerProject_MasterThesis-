@@ -22,7 +22,7 @@ tstep = 200;
 %% Initial guess for steady state solution using IPOPT
 
 %disturbance is total power
-Pnet = 5.4e6;%1900e3*par.N; %6.3MW total input power
+Pnet = 9e6;%1900e3*par.N; %6.3MW total input power
 
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
@@ -49,16 +49,24 @@ q_cw_0 = 2.0698e4/N*ones(1,par.N);                      %cooling water flow rate
 q_H2O_0 = 324.2657/N*ones(1,par.N);                     %total water lost during electrolysis, [grams/sec]
 
 u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 q_H2O_0]; 
+counter = 1;
+flag = {};
 
+for Pnet = 9e6:-0.1e6:0.6e6
+    
 %initial guess vector for the IPOPT
 X_guess = [z_guess x_guess u_guess];
 
-
-
 %% Solve the steady state problem
-[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess,Pnet);
+[z0, x0, u0, EXIT] = El_SteadyStateOptimization(N,X_guess,Pnet);
+z_guess = z0;
+x_guess = x0;
+u_guess = u0;
 
-T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer 
+T_El_in_k = x0(3*par.N+1:4*par.N);%temperature of lye entering the electrolyzer
+T_bt_out_k = x0(2*par.N+1:3*par.N);
+T_cw_out_k = x0(4*par.N+1:5*par.N);
+
 %Initial value of the MVs 
 Vss = u0(1:par.N);
 q_lyek = u0(par.N+1:2*par.N);
@@ -67,13 +75,22 @@ qf_cw = u0(2*par.N+1:3*par.N);
 qcw_kgs = qf_cw/1000;
 Qwater = u0(3*par.N+1:4*par.N);
 
+Pcons = sum(z0(2*par.N+1:3*par.N));
+Iden = (0.1*z0(par.N+1:2*par.N))/par.EL(1).A;
+Tk = x0(1:par.N);
+V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
+
+row(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_k,T_cw_out_k,T_bt_out_k,V_H2_ini];
+flag = {flag{:},EXIT}';
+counter = counter+1;
+end
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
 
 %% Manipulated variables
 %these are the degree of freedoms that we will utilise to control the system
 
-V_El = zeros(len,N);              %voltage across the electrolyzer, [Watt], len is the length of time vector
+V_El = zeros(len,N);              %voltage across the electrolyzer cell, [volts], len is the length of time vector
 for j = 1:N
     V_El(1:end,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
     %     V_El(tstep:end,j)=Vss(j)*1;

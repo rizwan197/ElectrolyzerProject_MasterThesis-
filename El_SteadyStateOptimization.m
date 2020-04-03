@@ -1,11 +1,11 @@
-function [z0, x0, u0] = El_SteadyStateOptimization(N,X0,P0)
+function [z0, x0, u0, EXIT] = El_SteadyStateOptimization(N,X0,P0)
 
 import casadi.*
 par = parElectrolyzer(N);
 
 %% Build the plant model and solve steady state optimization problem
 [xDiff, xAlg, input, eqnAlg, eqnDiff] = model(par.N);
-x = [xAlg;xDiff]; 
+x = [xAlg;xDiff];
 
 %% Defining the disturbance
 Pnet = SX.sym('Pnet');
@@ -52,10 +52,10 @@ ubqH2Oloss_k = inf*ones(par.N,1);
 lbT_k = 25*ones(par.N,1);%lower bound on the electrolyzer temperature
 ubT_k = 80*ones(par.N,1);
 
-lbMbt = 0*ones(par.N,1);%lower bound on the mass in the buffer tank 
+lbMbt = 0*ones(par.N,1);%lower bound on the mass in the buffer tank
 ubMbt = 2000000*ones(par.N,1);
 
-lbT_bt_out = 0*ones(par.N,1);%lower bound on the temperature of lye leaving the buffer tank 
+lbT_bt_out = 0*ones(par.N,1);%lower bound on the temperature of lye leaving the buffer tank
 ubT_bt_out = inf*ones(par.N,1);
 
 lbT_el_in = 0*ones(par.N,1);%lower bound on the temperature at electrolyzer inlet
@@ -68,7 +68,7 @@ ubT_cw_out = inf*ones(par.N,1);
 lbU_el_k = zeros(par.N,1);%lower bound on the electrolyzer voltage
 ubU_el_k = inf*ones(par.N,1);
 lbq_lye_k = 500*ones(par.N,1);%lower bound on the lye flowrate
-ubq_lye_k = 8000*ones(par.N,1);
+ubq_lye_k = 10000*ones(par.N,1);
 lbq_cw = 1e-2*ones(par.N,1);%lower bound on the coolant flow rate
 ubq_cw = 20000*ones(par.N,1);
 lbqH2O = 0*ones(par.N,1);%lower bound on total water lost during electrolysis
@@ -77,8 +77,8 @@ ubqH2O = inf*ones(par.N,1);
 lbw = [lbw;lbu_k;lbi_k;lbP_k;lbFeff_k;lbnH2_k;lbqH2Oloss_k;lbT_k;lbMbt;...
     lbT_bt_out;lbT_el_in;lbT_cw_out;lbU_el_k;lbq_lye_k;lbq_cw;lbqH2O];%bounds on all the variables
 ubw = [ubw;ubu_k;ubi_k;ubP_k;ubFeff_k;ubnH2_k;ubqH2Oloss_k;ubT_k;ubMbt;...
-    ubT_bt_out;ubT_el_in;ubT_cw_out;ubU_el_k;ubq_lye_k;ubq_cw;ubqH2O]; 
- 
+    ubT_bt_out;ubT_el_in;ubT_cw_out;ubU_el_k;ubq_lye_k;ubq_cw;ubqH2O];
+
 
 %% preparing symbolic constraints
 g = {};
@@ -95,30 +95,42 @@ end
 IdenMin = 32;   %minimum current density, 32 mA/cm2
 IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
-g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet};
-lbg = [lbg;zeros(11*par.N,1);IdenMin*ones(par.N,1);0];
-ubg = [ubg;zeros(11*par.N,1);IdenMax*ones(par.N,1);P0];
+deltaT1_k = xDiff(3*par.N+1:4*par.N) - par.Tw_in_k*ones(par.N,1);%difference in temperatures of hot and cold streams at inlet
+deltaT2_k = xDiff(2*par.N+1:3*par.N) - xDiff(4*par.N+1:5*par.N);%difference in temperatures of hot and cold streams at outlet
 
+deltaT_El1 = xDiff(1)-xDiff(3*par.N+1);
+deltaT_El2 = xDiff(2)-xDiff(3*par.N+2);
+deltaT_El3 = xDiff(3)-xDiff(4*par.N);
+
+g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet,deltaT1_k,deltaT2_k,deltaT_El1,deltaT_El2,deltaT_El3};
+lbg = [lbg;zeros(11*par.N,1);IdenMin*ones(par.N,1);0;2e-3*ones(par.N,1);2e-3*ones(par.N,1);0;0;0];
+ubg = [ubg;zeros(11*par.N,1);IdenMax*ones(par.N,1);P0;inf*ones(par.N,1);inf*ones(par.N,1);30;30;30];
+
+% g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet,deltaT1_k,deltaT2_k,deltaT_El1};
+% lbg = [lbg;zeros(11*par.N,1);IdenMin*ones(par.N,1);0;2e-3*ones(par.N,1);2e-3*ones(par.N,1);0];
+% ubg = [ubg;zeros(11*par.N,1);IdenMax*ones(par.N,1);P0;inf*ones(par.N,1);inf*ones(par.N,1);30];
 
 Objvol_H2 = SX.zeros(par.N,1);
 for nEl = 1:par.N
     Objvol_H2(nEl) = (xAlg(4*par.N+nEl)*0.0224136*3600);%[Nm3/h]
 end
-J = -(Objvol_H2(1)+Objvol_H2(2)+Objvol_H2(3));
 
-% J = 10;
+J = -(Objvol_H2(1)+Objvol_H2(2)+Objvol_H2(3));
+% J = -(Objvol_H2(1));
 
 %% formalize into an NLP problem
 nlp = struct('x',vertcat(w{:}),'g',vertcat(g{:}),'f',J,'p',Pnet);
 
-
+options = struct;
+options.ipopt.print_level = 0;
 % assign solver - IPOPT in this case
-solver = nlpsol('solver','ipopt',nlp);
+solver = nlpsol('solver','ipopt',nlp,options);
 
 
 % solve - using the defined initial guess and bounds
 sol = solver('x0',w0,'lbx',lbw,'ubx',ubw,'lbg',lbg,'ubg',ubg,'p',P0);
 res = full(sol.x);
+EXIT = solver.stats.return_status;
 
 %% Extracting results
 Uk = [];
@@ -164,20 +176,18 @@ end
 V_H2_ini = nH2k*0.0224136*3600;%[Nm3/h]
 for nEl = 1:par.N
     Ps_ini(nEl) = (Uk(nEl)*Ik(nEl)*par.EL(nEl).nc)/(1000*V_H2_ini(nEl));%[kWh/Nm3]
-    Iden(nEl) = 0.1*Ik(nEl)/par.EL(nEl).A; 
+    Iden(nEl) = 0.1*Ik(nEl)/par.EL(nEl).A;
 end
-Pnet = sum(Pk)
-
-Iden
-Tk
-T_el_in
-
-V_H2_ini
-Ps_ini;
-
-Eff_El = 3.55./Ps_ini
-
-
+% Pnet = sum(Pk)
+% 
+% Iden
+% Tk
+% T_el_in
+% 
+% V_H2_ini
+% Ps_ini;
+% 
+% Eff_El = 3.55./Ps_ini
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk];
 x0 = [Tk massBt T_bt_out T_el_in T_CW_out];
