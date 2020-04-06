@@ -92,7 +92,7 @@ Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
 Tk = x0(1:par.N);
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 
-row1(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini sum(V_H2_ini)];
+row1(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini];
 % (T_bt_out-T_cw_out),(T_El_in_set-10)
 flag = {flag{:},EXIT}';
 counter = counter+1;
