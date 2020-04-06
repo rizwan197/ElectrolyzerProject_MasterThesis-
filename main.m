@@ -80,11 +80,15 @@ Iden = (0.1*z0(par.N+1:2*par.N))/par.EL(1).A;
 Tk = x0(1:par.N);
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 
-row(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_k,T_cw_out_k,T_bt_out_k,V_H2_ini,sum(V_H2_ini)];
+row_DC_S2(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_k,T_cw_out_k,T_bt_out_k,V_H2_ini,sum(V_H2_ini)];
+ac_DC_S2(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_k)/30, 2e-3./(T_El_in_k - par.Tw_in_k*ones(1,par.N)), 2e-3./(T_bt_out_k-T_cw_out_k),...
+    qlye_kgs/10, 0.5./qlye_kgs, qcw_kgs/20 1e-5./qcw_kgs];
+
 flag = {flag{:},EXIT}';
 counter = counter+1;
 end
-
+plot(row_DC_S2(:,1),ac_DC_S2(:,[1:3*par.N,6*par.N+1:10*par.N]))
+save('Data_DecoupledElectrolyzers_State2')
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
 
