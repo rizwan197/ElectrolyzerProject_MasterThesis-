@@ -100,7 +100,7 @@ counter = counter+1;
 
 end
 
-save('Data_CoupledElectrolyzer')
+save('Data_CoupledElectrolyzerState1')
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
