@@ -93,14 +93,21 @@ Tk = x0(1:par.N);
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 
 
-row1(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,(T_bt_out-T_cw_out),(T_El_in_set-10),T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
+row_C_S2(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
+
+if contains(EXIT,'Solve_Succeeded')
+    ac_C_S2(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_set)/30, 2e-3/(T_El_in_set - par.Tw_in), 2e-3/(T_bt_out-T_cw_out),...
+        qlye_kgs/10, 0.5./qlye_kgs, qcw_kgs/80 1e-5/qcw_kgs];
+else
+    ac_C_S2(counter,:) = NaN*ones(1,7*par.N+4);
+end
 
 flag = {flag{:},EXIT}';
 counter = counter+1;
 
 end
 
-save('Data_CoupledElectrolyzerState1')
+save('Data_CoupledElectrolyzerState2')
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
