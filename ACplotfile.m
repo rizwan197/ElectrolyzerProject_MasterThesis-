@@ -4,6 +4,8 @@ close all
 
 load Data_CoupledElectrolyzerState2
 load Data_CoupledElectrolyzerState1
+load Data_DecoupledElectrolyzers_State1
+load Data_DecoupledElectrolyzers_State2
 
 par.N = 3;
 
