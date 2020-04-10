@@ -2,6 +2,7 @@ clc
 clear
 close all
 
+%Solving the dynamic optimization problem for Flowsheet 1 State 2
 %% Load CasADi
 addpath('/Users/mdrizwan/Documents/MATLAB/casadi-osx-matlabR2015a-v3.5.1')
 import casadi.*
@@ -17,60 +18,20 @@ ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
 tsamp = t0:ts:tf;
 len = length(tsamp);                    %number of simulation time steps
+Tp = 900; %prediction horizon for MPC
+Tc = 900; %control horizon for MPC
 tstep = 200;
 
-%% Initial guess for steady state solution using IPOPT
+%% Initial guess for steady state RTO
 
 %disturbance is total power
-Pnet = 9e6;%1900e3*par.N; %6.3MW total input power
+Pnet = 5.6e6;%1900e3*par.N; %6.3MW total input power
 
-%algebriac state variables('z')
-u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
-P_k0 = Pnet/par.N*ones(1,par.N);        %intial guess is power divided equally among electrolyzers 
-i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current
-Feff_k0 = 0.97*ones(1,par.N);
-nH2_k0 = 6*ones(1,par.N);               %[mol/s]
-qH2Oloss_k0 = nH2_k0*par.Const.Mwt.*ones(1,par.N);%[g/s]
-nH2El_net0 = sum(nH2_k0);               %[mol/s]
-nH2out_net0 = sum(nH2_k0);
-nO2El_net0 = 0.5*nH2El_net0;
-nO2out_net0 = 0.5*nH2out_net0;
-T_El_out0 = 80;                         %initial guess for the temperature of lye entering in the heat exchanger
+X_guess = initializeRTO(N,Pnet);
 
-%differential state variables('x')
-T_k0 = 75*ones(1,par.N);
-Psto_H20 = 25;        %initial H2 storage pressure (calculated from steady state solution) [bar]
-Psto_O20 = 25;        %initial O2 storage pressure (calculated from steady state solution) [bar]
-Mass_Bt0 = 6000000;  %mass of the liquid in the buffer tank,[g] 6000kg
-T_bt_out0 = 70;       %Initial guess for the temperature of lye mixture at the exit of the buffer tank,[degC]
-T_El_in0 = 65;        %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
-T_cw_out0 = 20;       %initial guess for the exit temperature of the cooling water leaving heat exchanger,[deg C]
-
-z_guess = [u_k0 i_k0 P_k0 Feff_k0 nH2_k0 qH2Oloss_k0 nH2El_net0 nH2out_net0 nO2El_net0 nO2out_net0 T_El_out0];
-x_guess = [T_k0 Psto_H20 Psto_O20 Mass_Bt0 T_bt_out0 T_El_in0 T_cw_out0];
-
-%initial guess for input variables('u')
-U_El_k_0 = 414.0301*ones(1,par.N);      %voltage across electrolyzers, [Volts]
-q_lye_k_0 = 6648*ones(1,par.N);         %lye flowrate, [g/s]
-q_cw_0 = 2.0698e4;                      %cooling water flow rate, [g/s]
-zH2_0 = 0.4;
-zO2_0 = 0.4;
-q_H2O_0 = 324.2657;                     %total water lost during electrolysis, [grams/sec]
-
-u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0]; 
-
-% z_guess = [1.64914382696133,1.64914382696133,1.64914382696133,1436.98931662721,894.707646831791,831.999991899820,545054.474012782,339365.366322788,315580.159654897,0.942956458291752,0.864833074000270,0.833084743618188,1.61503975758028,0.922255976806770,0.826134088131333,29.0707156364450,16.6006075825219,14.8704135863640,3.36342982251838,3.36342982251838,1.68171491125919,1.68171491125919,29.0401909785640];
-% x_guess = [28.5593445547241,29.5481048814220,34.5546070346873,23.9292138389395,23.9292020994336,3001078.93704814,29.0480211719569,26.7987971517601,28.3544611288207];
-% u_guess = [379.303080201107,379.303080201107,379.303080201107,8000,2516.97596336600,500,1000,0.102895700700712,0.102888834923687,60.5417368053311];
-
-X_guess = [z_guess x_guess u_guess];
-
-
-
-%% Solve the steady state problem
-[z0, x0, u0] = El_SteadyStateOptimization(N,X_guess,Pnet);
-
-T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer 
+%% Solve the steady state RTO, economic objective function
+[z0, x0, u0] = El_RTO(N,X_guess,Pnet);
+% T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer 
 
 %Initial value of the MVs 
 Vss = u0(1:par.N);
@@ -86,11 +47,15 @@ Pcons = sum(z0(2*par.N+1:3*par.N));
 Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
 Tk = x0(1:par.N);
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
-
-row = [Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,V_H2_ini];
+%Check for the RTO solution
+% row = [Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,V_H2_ini];
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
+
+%Add OCP for the MPC here 
+
+
 
 %% Manipulated variables
 %these are the degree of freedoms that we will utilise to control the system
@@ -266,8 +231,8 @@ ylabel('Cooling water flowrate, g/s')
 grid on
 subplot(3,1,3)
 plot(Telin,'k')
-hold on
-plot(T_El_in_set,'r--')
+% hold on
+% plot(T_El_in_set,'r--')
 xlabel('Time, s')
 ylabel('T_E_l_ _i_n, [ ^0C]')
 %ylim([63.5 65.5])
