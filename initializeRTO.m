@@ -1,4 +1,4 @@
-function Xguess = intializeRTO(N,Pnet) 
+function Xguess = initializeRTO(N,Pnet) 
 
 par = parElectrolyzer(N);
 

@@ -25,7 +25,7 @@ tstep = 200;
 %% Initial guess for steady state RTO
 
 %disturbance is total power
-Pnet = 5.6e6;%1900e3*par.N; %6.3MW total input power
+Pnet = 5.6e6;
 
 X_guess = initializeRTO(N,Pnet);
 

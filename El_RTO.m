@@ -1,4 +1,4 @@
-function [z0, x0, u0] = El_SteadyStateOptimization(N,X0,P0)
+function [z0, x0, u0] = El_RTO(N,X0,P0)
 
 import casadi.*
 par = parElectrolyzer(N);
