@@ -8,62 +8,76 @@ addpath('/Users/mdrizwan/Documents/MATLAB/casadi-osx-matlabR2015a-v3.5.1')
 import casadi.*
 
 %% Loading parameters
-N = 3;                               %no. of electrolyzers
-par = parElectrolyzer(N);
+N_el = 3;                               %no. of electrolyzers
+par = parElectrolyzer(N_el);
 
 %% Inputs for the simulation
-num_hr = .25;                           %no. of hours
+num_hr = .1;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
 tsamp = t0:ts:tf;
 len = length(tsamp);                    %number of simulation time steps
-Tp = 900; %prediction horizon for MPC
-Tc = 900; %control horizon for MPC
+Tp = 2; %prediction horizon for MPC
+Tc = 2; %control horizon for MPC
 tstep = 200;
 
-%% Initial guess for steady state RTO
-
-%disturbance is total power
+%% disturbance is total power
 Pnet = 5.6e6;
 
-X_guess = initializeRTO(N,Pnet);
-
 %% Solve the steady state RTO, economic objective function
-[z0, x0, u0] = El_RTO(N,X_guess,Pnet);
-% T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer 
+[z_guess,x_guess,u_guess] = initializeRTO(par.N,Pnet);
+X_guess = [z_guess,x_guess,u_guess];
 
-%Initial value of the MVs 
-Vss = u0(1:par.N);
-q_lyek = u0(par.N+1:2*par.N);
-qlye_kgs = q_lyek/1000; 
-qf_cw = u0(2*par.N+1);
-qcw_kgs = qf_cw/1000;
-zH2 = u0(2*par.N+2);
-zO2 = u0(2*par.N+3);
-Qwater = u0(2*par.N+4);
+[z0, x0, u0] = El_RTO(par.N,X_guess,Pnet);
+Xset_RTO = [z0,x0];
 
-Pcons = sum(z0(2*par.N+1:3*par.N));
-Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
-Tk = x0(1:par.N);
-V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
-%Check for the RTO solution
-% row = [Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,V_H2_ini];
+%% Add OCP for the MPC here
+MPCinit.X0 = [z_guess,x_guess]';     %X0 of the plant at t=0,column vector
+MPCinit.Xset = Xset_RTO';            %setpoint from the RTO
+MPCinit.uk_prev = u0';               %uk at t=0
+Xk(:,1) = MPCinit.X0;
 
-%% Build the plant model
-[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
-
-%Add OCP for the MPC here 
-
+for k=1:len
+    Xset = Xset_RTO;            %setpoint for the MPC to track
+    
+    %solve the OCP to get the first control element to implement to the plant
+    uk = OCP(MPCinit,Tp,Tc,par.N);
+    
+    %integrate the plant model to get the plant state for the uk
+    [~,~,~,~,~,F] = modelnew(par.N);
+    r =  F('x0',Xk(6*par.N+6:end,k),'z0',Xk(1:6*par.N+5,k),'p',uk);
+    x0_MPC = full(r.xf);
+    z0_MPC = full(r.zf);
+    Xk(:,k+1) = [z0_MPC; x0_MPC];       %update plant state
+    MPCinit.X0 = Xk(:,k+1);             %update plant state to the OCP
+    MPCinit.uk_prev = uk;               %update previous input sequence to the OCP
+end
 
 
 %% Manipulated variables
+% %Initial value of the MVs
+% Vss = u0(1:par.N);
+% q_lyek = u0(par.N+1:2*par.N);
+% qlye_kgs = q_lyek/1000;
+% qf_cw = u0(2*par.N+1);
+% qcw_kgs = qf_cw/1000;
+% zH2 = u0(2*par.N+2);
+% zO2 = u0(2*par.N+3);
+% Qwater = u0(2*par.N+4);
+%
+% Pcons = sum(z0(2*par.N+1:3*par.N));
+% Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
+% Tk = x0(1:par.N);
+% V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
+% %Check for the RTO solution
+% % row = [Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,V_H2_ini];
 %these are the degree of freedoms that we will utilise to control the system
 
 V_El = zeros(len,N);              %voltage across the electrolyzer, [Watt], len is the length of time vector
 for j = 1:N
     V_El(1:end,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
-%     V_El(tstep:end,j)=Vss(j)*1;
+    %     V_El(tstep:end,j)=Vss(j)*1;
 end
 
 qlye = zeros(len,N);                   %lye flowrate, [g/s]
@@ -156,13 +170,13 @@ for i=1:len
         I_den(i,j) = 0.1*I(i,j)/par.EL(j).A;    %current density, [mA/cm^2]
         
         Qloss(i,j) = par.TherMo(j).A_El*(par.TherMo(j).hc*(Temp(j)-par.EL(j).Ta) + ...
-            par.sigma*par.em*((Temp(j)+273.15)^4-(par.EL(j).Ta+273.15)^4)); 
+            par.sigma*par.em*((Temp(j)+273.15)^4-(par.EL(j).Ta+273.15)^4));
         %heat loss to surrounding in the electrolyzer, [watts]
         
-        Qgen(i,j) = par.EL(j).nc*(U(i,j)-par.EL(j).Utn)*I(i,j);             
+        Qgen(i,j) = par.EL(j).nc*(U(i,j)-par.EL(j).Utn)*I(i,j);
         %heat generated in the electrolyzer, [watts]
         
-        Qlosslye(i,j) = qlye(i,j)*par.Const.CpLye*(Telin(i)-Temp(i,j));                 
+        Qlosslye(i,j) = qlye(i,j)*par.Const.CpLye*(Telin(i)-Temp(i,j));
         %heat taken out by the lye from the electrolyzer, [watts]
         
         V_H2(i,j) = nH2elout(i,j)*0.0224136*3600;%hydrogen production rate from individual electrolyzer, [Nm3/h]

@@ -1,4 +1,4 @@
-function Xguess = initializeRTO(N,Pnet) 
+function [z_guess,x_guess,u_guess] = initializeRTO(N,Pnet) 
 
 par = parElectrolyzer(N);
 
@@ -36,5 +36,4 @@ zO2_0 = 0.4;
 q_H2O_0 = 324.2657;                     %total water lost during electrolysis, [grams/sec]
 u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0]; 
 
-%% Initial guess vector for the RTO
-Xguess = [z_guess x_guess u_guess];
+end

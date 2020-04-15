@@ -50,9 +50,9 @@ par = parElectrolyzer(N);
 import casadi.*
 
 %% Define symbolic variables
-x = SX.sym('x',7*par.N+11);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
-eqnAlg = SX.zeros(6*par.N+5,1);
-eqnDiff = SX.zeros(par.N+6,1);
+x = MX.sym('x',7*par.N+11);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
+eqnAlg = MX.zeros(6*par.N+5,1);
+eqnDiff = MX.zeros(par.N+6,1);
 
 %variables for algebriac eqns.
 u_k=[];
@@ -89,7 +89,7 @@ end
 
 %% Define inputs for the simulation (MVs for the dynamic simulation)
 
-inp = SX.sym('inp',2*par.N+4);
+inp = MX.sym('inp',2*par.N+4);
 
 U_El_k=[];
 q_lye_k=[];
@@ -121,11 +121,13 @@ for nEl = 1:par.N
     eqnAlg(5*par.N+nEl) = qH2Oloss_k(nEl) - nH2_k(nEl)*par.Const.Mwt;  %flowrate of water lost, [g/s]  
 end
 
-sum_H2net = SX.zeros(1,1);
-netqlye = SX.zeros(1,1);
-netqloss = SX.zeros(1,1);
-qlyeT = SX.zeros(1,1);
-qlossT = SX.zeros(1,1);
+% sum_H2net = sum(nH2_k)
+
+sum_H2net = MX.zeros(1,1);
+netqlye = MX.zeros(1,1);
+netqloss = MX.zeros(1,1);
+qlyeT = MX.zeros(1,1);
+qlossT = MX.zeros(1,1);
 
 for nEl = 1:par.N
     sum_H2net = sum_H2net + nH2_k(nEl);         %sum of hydrogen from all individual electrolyzers
@@ -170,8 +172,8 @@ eqnDiff(par.N+5) = ((netqlye*(T_bt_out-T_El_in))/(1000*par.Const.rhoLye*par.Cons
 eqnDiff(par.N+6) = ((q_cw*(par.Tw_in-T_cw_out))/(1000*par.Const.rho*par.Const.Vc)) + ...
     (par.Hex.UA*deltaT_LMTD/(1000*par.Const.rho*par.Const.Cp*par.Const.Vc));%differential eqn for the cold stream exit temperature from heat exchanger
 
-xDiff = x(6*par.N+6:end,1);
-xAlg = x(1:6*par.N+5,1);
+xDiff = x{6*par.N+6:end};
+xAlg = x{1:6*par.N+5};
 input = inp;
 
 dae = struct('x',xDiff,'z',xAlg,'p',input,'ode',eqnDiff,'alg',eqnAlg);
