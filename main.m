@@ -92,8 +92,12 @@ Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
 Tk = x0(1:par.N);
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 
+for nEl = 1:par.N
+    Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
+    Qlossk(nEl) = par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(Tk(nEl)-par.EL(nEl).Ta) + par.sigma*par.em*((Tk(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4))/1000;
+end
 
-row_C_S1(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
+row_C_S1(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini) Qgenk Qlossk];
 
 if strcmp(EXIT,'Solve_Succeeded')
     ac_C_S1(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_set)/30, 2e-3/(T_El_in_set - par.Tw_in), 2e-3/(T_bt_out-T_cw_out),...
@@ -107,7 +111,7 @@ counter = counter+1;
 
 end
 
-save('Data_CoupledElectrolyzerState1')
+% save('Data_CoupledElectrolyzerState1')
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
