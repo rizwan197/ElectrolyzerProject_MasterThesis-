@@ -52,7 +52,7 @@ u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 q_H2O_0];
 counter = 1;
 flag = {};
 
-for Pnet = 9e6:-0.1e5:0.6e6
+for Pnet = 9e6:-0.1e6:.6e6
     
 %initial guess vector for the IPOPT
 X_guess = [z_guess x_guess u_guess];
@@ -93,7 +93,7 @@ flag = {flag{:},EXIT}';
 counter = counter+1;
 end
 
-save('Data_DecoupledElectrolyzers_State1exp')
+% save('Data_DecoupledElectrolyzers_State1exp')
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
