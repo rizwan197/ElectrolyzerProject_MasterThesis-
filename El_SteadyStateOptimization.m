@@ -29,55 +29,9 @@ w = {w{:},x,input};
 w0 = [w0;X0']; %initial guess
 
 %defining constraints on the decision variables (states and inputs i.e. MVs)
-
-%constraints on states
-lbu_k = 0*ones(par.N,1);%lower bound on cell voltage
-ubu_k = inf*ones(par.N,1);
-
-lbi_k = zeros(par.N,1);%lower bound on current
-ubi_k = inf*ones(par.N,1);
-
-lbP_k = 0*ones(par.N,1);%lower bound on power
-ubP_k = inf*ones(par.N,1);
-
-lbFeff_k = 0*ones(par.N,1);%lower bound on faraday efficiency
-ubFeff_k = 1*ones(par.N,1);
-
-lbnH2_k = zeros(par.N,1);%lower bound on hydrogen production
-ubnH2_k = inf*ones(par.N,1);
-
-lbqH2Oloss_k = zeros(par.N,1);%lower bound on water loss
-ubqH2Oloss_k = inf*ones(par.N,1);
-
-lbT_k = 25*ones(par.N,1);%lower bound on the electrolyzer temperature
-ubT_k = 80*ones(par.N,1);
-
-lbMbt = 0*ones(par.N,1);%lower bound on the mass in the buffer tank
-ubMbt = 2000000*ones(par.N,1);
-
-lbT_bt_out = 0*ones(par.N,1);%lower bound on the temperature of lye leaving the buffer tank
-ubT_bt_out = inf*ones(par.N,1);
-
-lbT_el_in = 0*ones(par.N,1);%lower bound on the temperature at electrolyzer inlet
-ubT_el_in = inf*ones(par.N,1);
-
-lbT_cw_out = 0*ones(par.N,1);%lower bound on the coolant outlet temperature
-ubT_cw_out = inf*ones(par.N,1);
-
-%constraints on the inputs
-lbU_el_k = zeros(par.N,1);%lower bound on the electrolyzer voltage
-ubU_el_k = inf*ones(par.N,1);
-lbq_lye_k = 500*ones(par.N,1);%lower bound on the lye flowrate
-ubq_lye_k = 10000*ones(par.N,1);
-lbq_cw = 1e-2*ones(par.N,1);%lower bound on the coolant flow rate
-ubq_cw = 20000*ones(par.N,1);
-lbqH2O = 0*ones(par.N,1);%lower bound on total water lost during electrolysis
-ubqH2O = inf*ones(par.N,1);
-
-lbw = [lbw;lbu_k;lbi_k;lbP_k;lbFeff_k;lbnH2_k;lbqH2Oloss_k;lbT_k;lbMbt;...
-    lbT_bt_out;lbT_el_in;lbT_cw_out;lbU_el_k;lbq_lye_k;lbq_cw;lbqH2O];%bounds on all the variables
-ubw = [ubw;ubu_k;ubi_k;ubP_k;ubFeff_k;ubnH2_k;ubqH2Oloss_k;ubT_k;ubMbt;...
-    ubT_bt_out;ubT_el_in;ubT_cw_out;ubU_el_k;ubq_lye_k;ubq_cw;ubqH2O];
+[lbz,lbx,lbu,ubz,ubx,ubu] = decision_varbound(par.N);
+lbw = [lbw;lbz;lbx;lbu];
+ubw = [ubw;ubz;ubx;ubu];
 
 
 %% preparing symbolic constraints
@@ -86,7 +40,7 @@ g = {};
 lbg = [];
 ubg = [];
 
-% declaring constraints
+% declaring additional constraints
 
 Iden = SX.zeros(par.N,1);
 for nEl = 1:par.N
@@ -95,8 +49,8 @@ end
 IdenMin = 32;   %minimum current density, 32 mA/cm2
 IdenMax = 198.5;%maximum current density, 198.5 mA/cm2
 
-deltaT1_k = xDiff(3*par.N+1:4*par.N) - par.Tw_in_k*ones(par.N,1);%difference in temperatures of hot and cold streams at inlet
-deltaT2_k = xDiff(2*par.N+1:3*par.N) - xDiff(4*par.N+1:5*par.N);%difference in temperatures of hot and cold streams at outlet
+deltaT1_k = xDiff(3*par.N+1:4*par.N) - par.Tw_in_k*ones(par.N,1);   %difference in temperatures of hot and cold streams at inlet
+deltaT2_k = xDiff(2*par.N+1:3*par.N) - xDiff(4*par.N+1:5*par.N);    %difference in temperatures of hot and cold streams at outlet
 
 deltaT_El1 = xDiff(1)-xDiff(3*par.N+1);
 deltaT_El2 = xDiff(2)-xDiff(3*par.N+2);
@@ -105,10 +59,6 @@ deltaT_El3 = xDiff(3)-xDiff(4*par.N);
 g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet,deltaT1_k,deltaT2_k,deltaT_El1,deltaT_El2,deltaT_El3};
 lbg = [lbg;zeros(11*par.N,1);IdenMin*ones(par.N,1);0;2e-3*ones(par.N,1);2e-3*ones(par.N,1);0;0;0];
 ubg = [ubg;zeros(11*par.N,1);IdenMax*ones(par.N,1);P0;inf*ones(par.N,1);inf*ones(par.N,1);30;30;30];
-
-% g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet,deltaT1_k,deltaT2_k,deltaT_El1};
-% lbg = [lbg;zeros(11*par.N,1);IdenMin*ones(par.N,1);0;2e-3*ones(par.N,1);2e-3*ones(par.N,1);0];
-% ubg = [ubg;zeros(11*par.N,1);IdenMax*ones(par.N,1);P0;inf*ones(par.N,1);inf*ones(par.N,1);30];
 
 Objvol_H2 = SX.zeros(par.N,1);
 for nEl = 1:par.N
@@ -178,15 +128,8 @@ for nEl = 1:par.N
     Ps_ini(nEl) = (Uk(nEl)*Ik(nEl)*par.EL(nEl).nc)/(1000*V_H2_ini(nEl));%[kWh/Nm3]
     Iden(nEl) = 0.1*Ik(nEl)/par.EL(nEl).A;
 end
-% Pnet = sum(Pk)
-% 
-% Iden
-% Tk
-% T_el_in
-% 
-% V_H2_ini
-% Ps_ini;
-% 
+
+% Ps_ini; 
 % Eff_El = 3.55./Ps_ini
 
 z0 = [Uk Ik Pk Feffk nH2k qH2Olossk];
