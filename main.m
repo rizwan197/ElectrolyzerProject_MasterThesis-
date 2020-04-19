@@ -62,7 +62,7 @@ u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0];
 counter = 1;
 flag = {};
 
-for Pnet = 9e6:-0.1e6:0.6e6
+for Pnet = 6e6:-0.5e6:0.6e6
     
 X_guess = [z_guess x_guess u_guess];
 
@@ -86,6 +86,7 @@ qcw_kgs = qf_cw/1000;
 zH2 = u0(2*par.N+2);
 zO2 = u0(2*par.N+3);
 Qwater = u0(2*par.N+4);
+nH2 = sum(z0(4*par.N+1:5*par.N));
 
 Pcons = sum(z0(2*par.N+1:3*par.N));
 Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
@@ -97,13 +98,15 @@ for nEl = 1:par.N
     Qlossk(nEl) = par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(Tk(nEl)-par.EL(nEl).Ta) + par.sigma*par.em*((Tk(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4))/1000;
 end
 
-row_C_S1(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
+row_C_S2(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini), nH2];
 
 if strcmp(EXIT,'Solve_Succeeded')
-    ac_C_S1(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_set)/30, 2e-3/(T_El_in_set - par.Tw_in), 2e-3/(T_bt_out-T_cw_out),...
+    ac_C_S2(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_set)/30, 2e-3/(T_El_in_set - par.Tw_in), 2e-3/(T_bt_out-T_cw_out),...
         qlye_kgs/10, 0.5./qlye_kgs, qcw_kgs/80 1e-5/qcw_kgs];
+    plot_C_S2Nom(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
 else
-    ac_C_S1(counter,:) = NaN*ones(1,7*par.N+4);
+    ac_C_S2(counter,:) = NaN*ones(1,7*par.N+4);
+    plot_C_S2Nom(counter,:) = NaN*ones(1,4*par.N+7);
 end
 
 flag = {flag{:},EXIT}';
@@ -111,7 +114,8 @@ counter = counter+1;
 
 end
 
-% save('Data_CoupledElectrolyzerState1')
+% save('Data_CoupledEl_St2_Nominal')
+
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
