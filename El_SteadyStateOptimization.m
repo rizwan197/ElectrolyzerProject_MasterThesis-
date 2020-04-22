@@ -88,10 +88,10 @@ ubT_cw_out = inf;
 %constraints on the inputs
 lbU_el_k = zeros(par.N,1);%lower bound on the electrolyzer voltage
 ubU_el_k = inf*ones(par.N,1);
-lbq_lye_k = 500*ones(par.N,1);%lower bound on the lye flowrate
-ubq_lye_k = 10000*ones(par.N,1);
-% lbq_lye_k = 6.87e3*ones(par.N,1);%lower bound on the lye flowrate
-% ubq_lye_k = 6.87e3*ones(par.N,1);
+% lbq_lye_k = 500*ones(par.N,1);%lower bound on the lye flowrate
+% ubq_lye_k = 10000*ones(par.N,1);
+lbq_lye_k = 6.35e3*ones(par.N,1);%lower bound on the lye flowrate
+ubq_lye_k = 6.35e3*ones(par.N,1);
 lbq_cw = 0.01;%lower bound on the coolant flow rate
 ubq_cw = 80000;
 lbzH2 = 0;%lower bound on hydrogen outlet valve opening
