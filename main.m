@@ -80,20 +80,22 @@ Iden = (0.1*z0(par.N+1:2*par.N))/par.EL(1).A;
 Tk = x0(1:par.N);
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 
-row_DC_S1(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_k,T_cw_out_k,T_bt_out_k,V_H2_ini,sum(V_H2_ini)];
 
 if strcmp(EXIT, 'Solve_Succeeded')
-ac_DC_S1(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_k)/30, 2e-3./(T_El_in_k - par.Tw_in_k*ones(1,par.N)), 2e-3./(T_bt_out_k-T_cw_out_k),...
-    qlye_kgs/10, 0.5./qlye_kgs, qcw_kgs/20 1e-5./qcw_kgs];
+    ac_DC_S2_OS(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_k)/30, 2e-3./(T_El_in_k - par.Tw_in_k*ones(1,par.N)), 2e-3./(T_bt_out_k-T_cw_out_k),...
+        qlye_kgs/10, 0.5./qlye_kgs, qcw_kgs/20 1e-5./qcw_kgs];
+    row_DC_S2_OS(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_k,T_cw_out_k,T_bt_out_k,V_H2_ini,sum(V_H2_ini)];
+    
 else
-  ac_DC_S1(counter,:) = NaN*ones(1,11*par.N);
+  ac_DC_S2_OS(counter,:) = NaN*ones(1,11*par.N);
+  row_DC_S2_OS(counter,:) = NaN*ones(1,8*par.N+3);
 end
 
 flag = {flag{:},EXIT}';
 counter = counter+1;
 end
 
-% save('Data_DecoupledElectrolyzers_State1exp')
+% save('Data_DCEl_S2_OSHex')
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
