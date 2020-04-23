@@ -42,8 +42,8 @@ ubU_el_k = inf*ones(N,1);
 % lbq_lye_k = 500*ones(N,1);      %lower bound on the lye flowrate
 % ubq_lye_k = 10000*ones(N,1);
 
-lbq_lye_k = 7.18e3*ones(N,1);      %lower bound on the lye flowrate
-ubq_lye_k = 7.18e3*ones(N,1);
+lbq_lye_k = 6.63e3*ones(N,1);      %lower bound on the lye flowrate
+ubq_lye_k = 6.63e3*ones(N,1);
 
 lbq_cw = 1e-2*ones(N,1);        %lower bound on the coolant flow rate
 ubq_cw = (80000/3)*ones(N,1);
