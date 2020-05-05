@@ -14,7 +14,7 @@ par.Storage = struct('VstoH2',965000,'VstoO2',482500,'PoutH2',19,'PoutO2',19,...
 %VstoH2 and VstoO2 are in litres
 
 par.Tw_in = 10;             %inlet temperature of the cooling water in lye circulation heat exchanger
-par.Hex.UA = 1.75*1.5205e4; %20.48e3 %UA of heat exchanger [W/K], calculated from previous ss formulation
+par.Hex.UA = 1.75*1.5205e4;%20.48e3; %UA of heat exchanger [W/K], calculated from previous ss formulation
 par.kvalveH2 = 14.723;      %valve constant for the outlet valve of hydrogen storage tank, calculated for 25 bar storage pressure at SS   
 par.kvalveO2 = 7.362;       %valve constant for the outlet valve of oxygen storage tank, calculated for 25 bar storage pressure at SS    
 par.sigma = 5.672*10^-8;    %stefan-boltzmann constant [W/m^2 K^4]
@@ -60,17 +60,17 @@ for i =1:N
     par.EL(i).Tstd = 25;               %standard temperature, [C]
     
 end
-% El #2, performing at 85% of electrolyzer 1 
-par.U(2).r1 = par.U(2).r1*1.2;             %ohm m^2
-par.U(2).s = par.U(2).s*1.2;               %V
-par.U(2).f1 = par.U(2).f1*1.2;             %mA^2 cm^-4
-par.U(2).f2 = 0.97;
-
-%El #3, performing at 70% of electrolyzer 1
-par.U(3).r1 = par.U(3).r1*1.3;              %ohm m^2
-par.U(3).s = par.U(3).s*1.3;                %V
-par.U(3).f1 = par.U(3).f1*1.3;              %mA^2 cm^-4
-par.U(3).f2 = 0.96;
+% % El #2, performing at 85% of electrolyzer 1 
+% par.U(2).r1 = par.U(2).r1*1.2;             %ohm m^2
+% par.U(2).s = par.U(2).s*1.2;               %V
+% par.U(2).f1 = par.U(2).f1*1.2;             %mA^2 cm^-4
+% par.U(2).f2 = 0.97;
+% 
+% %El #3, performing at 70% of electrolyzer 1
+% par.U(3).r1 = par.U(3).r1*1.3;              %ohm m^2
+% par.U(3).s = par.U(3).s*1.3;                %V
+% par.U(3).f1 = par.U(3).f1*1.3;              %mA^2 cm^-4
+% par.U(3).f2 = 0.96;
 
 par.N=N;
 end
