@@ -46,7 +46,7 @@ x_guess = [T_k0 Mass_Bt0 T_bt_out0 T_El_in0 T_cw_out0];
 U_El_k_0 = 414.0301*ones(1,par.N);      %voltage across electrolyzers, [Volts]
 q_lye_k_0 = 6648*ones(1,par.N);         %lye flowrate, [g/s]
 q_cw_0 = 2.0698e4/N*ones(1,par.N);                      %cooling water flow rate, [g/s]
-q_H2O_0 = 324.2657/N*ones(1,par.N);                     %total water lost during electrolysis, [grams/sec]
+q_H2O_0 = 324.2657/N*ones(1,par.N)                     %total water lost during electrolysis, [grams/sec]
 
 u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 q_H2O_0]; 
 counter = 1;
@@ -84,18 +84,18 @@ V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 if strcmp(EXIT, 'Solve_Succeeded')
     ac_DC_S1(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_k)/30, 2e-3./(T_El_in_k - par.Tw_in_k*ones(1,par.N)), 2e-3./(T_bt_out_k-T_cw_out_k),...
         qlye_kgs/10, 0.5./qlye_kgs, qcw_kgs/20 1e-5./qcw_kgs];
-    row_DC_S1_Deg_qlyeFix(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_k,T_cw_out_k,T_bt_out_k,V_H2_ini,sum(V_H2_ini)];
+    row_DC_S1_New(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_k,T_cw_out_k,T_bt_out_k,V_H2_ini,sum(V_H2_ini)];
     
 else
     ac_DC_S1(counter,:) = NaN*ones(1,11*par.N);
-    row_DC_S1_Deg_qlyeFix(counter,:) = 0*ones(1,8*par.N+3);
+    row_DC_S1_New(counter,:) = 0*ones(1,8*par.N+3);
 end
 
 flag = {flag{:},EXIT}';
 counter = counter+1;
 end
 
-save('Data_DCEl_S1_DegHex_qlyeFix')
+% save('Data_DCEl_S1_DegHex_qlyeFix')
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
