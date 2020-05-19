@@ -31,28 +31,34 @@ loss_F2S1_HXDeg_qlvary = ((row_DC_S1_OS(:,end) - row_DC_S1_Deg(:,end))./row_DC_S
 loss_F2S1_HXDeg_qlfix = ((row_DC_S1_OS(:,end) - row_DC_S1_Deg_qlyeFix(:,end))./row_DC_S1_OS(:,end)).*100;   %Loss for F2S1_HXDeg_qlfix w.r.t F2S1_HXOS_qlvary
 
 
-figure()
+set(0, 'DefaultAxesFontSize', 12,  'DefaultLineLineWidth', 1.5)
+fig1 = figure('NumberTitle', 'off');
+hold on
 plot(row_DC_S1_OS(:,1),loss_F1S1_HXNew_qlvary,'b');
 hold on
 plot(row_DC_S1_OS(:,1),loss_F1S1_HXOS_qlvary,'k');
 hold on
 plot(row_DC_S1_OS(:,1),loss_F1S1_HXDeg_qlvary,'r');
 hold on
-plot(row_DC_S1_OS(:,1),loss_F2S1_HXNew_qlvary,'--b');
+plot(row_DC_S1_OS(:,1),loss_F1S1_HXNew_qlfix,'--b');
 hold on
-plot(row_DC_S1_OS(:,1),loss_F2S1_HXDeg_qlvary,'--r');
+plot(row_DC_S1_OS(:,1),loss_F1S1_HXOS_qlfix,'--k');
+hold on
+plot(row_DC_S1_OS(:,1),loss_F1S1_HXDeg_qlfix,'--r');
 
-legend('F_1S_1HX_{New}q_{lye,var}','F_1S_1HX_{OS}q_{lye,var}','F_1S_1HX_{Deg}q_{lye,var}','F_2S_1HX_{New}q_{lye,var}','F_2S_1HX_{Deg}q_{lye,var}')
+legend('S_1F_1HX_{New}q_{lye,var}','S_1F_1HX_{OS}q_{lye,var}','S_1F_1HX_{Deg}q_{lye,var}','S_1F_1HX_{New}q_{lye,fix}','S_1F_1HX_{OS}q_{lye,fix}','S_1F_1HX_{Deg}q_{lye,fix}')
 xlabel('Input Power, [MW]')
-ylabel('% Loss in production w.r.t F_2S_1HX_{OS}q_{lye,var}')
+ylabel('% Loss in production w.r.t S_1F_2HX_{OS}q_{lye,var}')
+grid on
 xlim([1,7])
+saveas(fig1,'CompF1wrtS1F2opt','epsc');
 
-figure()
-plot(row_DC_S1_OS(:,1),loss_F1S1_HXNew_qlfix,'b');
+set(0, 'DefaultAxesFontSize', 12,  'DefaultLineLineWidth', 1.5)
+fig2 = figure('NumberTitle', 'off');
 hold on
-plot(row_DC_S1_OS(:,1),loss_F1S1_HXOS_qlfix,'k');
+plot(row_DC_S1_OS(:,1),loss_F2S1_HXNew_qlvary,'b');
 hold on
-plot(row_DC_S1_OS(:,1),loss_F1S1_HXDeg_qlfix,'r');
+plot(row_DC_S1_OS(:,1),loss_F2S1_HXDeg_qlvary,'r');
 hold on
 plot(row_DC_S1_OS(:,1),loss_F2S1_HXNew_qlfix,'--b');
 hold on
@@ -60,8 +66,9 @@ plot(row_DC_S1_OS(:,1),loss_F2S1_HXOS_qlfix,'--k');
 hold on
 plot(row_DC_S1_OS(:,1),loss_F2S1_HXDeg_qlfix,'--r');
 
-legend('F_1S_1HX_{New}q_{lye,fix}','F_1S_1HX_{OS}q_{lye,fix}','F_1S_1HX_{Deg}q_{lye,fix}','F_2S_1HX_{New}q_{lye,fix}','F_2S_1HX_{OS}q_{lye,fix}','F_2S_1HX_{Deg}q_{lye,fix}')
+legend('S_1F_2HX_{New}q_{lye,var}','S_1F_2HX_{Deg}q_{lye,var}','S_1F_2HX_{New}q_{lye,fix}','S_1F_2HX_{OS}q_{lye,fix}','S_1F_2HX_{Deg}q_{lye,fix}')
 xlabel('Input Power, [MW]')
-ylabel('% Loss in production w.r.t F_2S_1HX_{OS}q_{lye,var}')
+ylabel('% Loss in production w.r.t S_1F_2HX_{OS}q_{lye,var}')
+grid on
 xlim([1,7])
-
+saveas(fig2,'CompF2wrtS1F2opt','epsc');

@@ -114,7 +114,7 @@ counter = counter+1;
 
 end
 
-save('Data_CEl_S1_OSHex')
+% save('Data_CEl_S1_OSHex')
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
