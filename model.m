@@ -113,7 +113,7 @@ for nEl = 1:par.N
     eqnAlg(3*par.N+nEl) = Feff_k(nEl) - ((.1*i_k(nEl)/par.EL(nEl).A)^2)/(par.U(nEl).f1+((.1*i_k(nEl)/par.EL(nEl).A)^2))*par.U(nEl).f2;     %faraday efficiency
     eqnAlg(4*par.N+nEl) = nH2_k(nEl) - Feff_k(nEl)*par.EL(nEl).nc*i_k(nEl)/(par.Const.ze*par.Const.FC);%nH2, H2 production rate from individual electrolyzer
     eqnAlg(5*par.N+nEl) = qH2Oloss_k(nEl) - nH2_k(nEl)*par.Const.Mwt;                   %flowrate of water lost, [g/s]
-    eqnAlg(6*par.N+nEl) = T_bt_in_k(nEl) - ((q_lye_k(nEl)*T_k(nEl)*par.Const.CpLye - qH2Oloss_k(nEl)*T_k(nEl)*par.Const.Cp + qH2Oloss_k(nEl)*(par.Const.CpLye-par.Const.Cp)*...
+    eqnAlg(6*par.N+nEl) = T_bt_in_k(nEl) - ((q_lye_k(nEl)*T_k(nEl)*par.Const.CpLye - qH2Oloss_k(nEl)*T_k(nEl)*par.Const.Cp + qH2Oloss_k(nEl)*(par.Const.Cp-par.Const.CpLye)*...
         par.Const.Tref)/(q_lye_k(nEl)*par.Const.CpLye - qH2Oloss_k(nEl)*par.Const.CpLye));    %calculation of T_bt_in_k
   
 end
