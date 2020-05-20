@@ -19,6 +19,9 @@ ubnH2_k = inf*ones(N,1);
 lbqH2Oloss_k = zeros(N,1);      %lower bound on water loss
 ubqH2Oloss_k = inf*ones(N,1);
 
+lbT_bt_in = 0*ones(N,1);        %lower bound on the temperature at lye at buffer tank inlet
+ubT_bt_in = inf*ones(N,1);
+
 %constraints on the differential states 
 lbT_k = 25*ones(N,1);           %lower bound on the electrolyzer temperature
 ubT_k = 80*ones(N,1);
@@ -57,11 +60,11 @@ ubq_cw = (80000/3)*ones(N,1);
 lbqH2O = 0*ones(N,1);           %lower bound on total water lost during electrolysis
 ubqH2O = inf*ones(N,1);
 
-lbz = [lbu_k;lbi_k;lbP_k;lbFeff_k;lbnH2_k;lbqH2Oloss_k];        %lower bounds on all the algebriac variables
-lbx = [lbT_k;lbMbt;lbT_bt_out;lbT_el_in;lbT_cw_out];            %lower bounds on all the differential variables
-lbu = [lbU_el_k;lbq_lye_k;lbq_cw;lbqH2O];                       %lower bounds on all the input variables
-ubz = [ubu_k;ubi_k;ubP_k;ubFeff_k;ubnH2_k;ubqH2Oloss_k];        %upper bounds on all the algebriac variables
-ubx = [ubT_k;ubMbt;ubT_bt_out;ubT_el_in;ubT_cw_out];            %upper bounds on all the differential variables
-ubu = [ubU_el_k;ubq_lye_k;ubq_cw;ubqH2O];                       %upper bounds on all the input variables
+lbz = [lbu_k;lbi_k;lbP_k;lbFeff_k;lbnH2_k;lbqH2Oloss_k;lbT_bt_in];          %lower bounds on all the algebriac variables
+lbx = [lbT_k;lbMbt;lbT_bt_out;lbT_el_in;lbT_cw_out];                        %lower bounds on all the differential variables
+lbu = [lbU_el_k;lbq_lye_k;lbq_cw;lbqH2O];                                   %lower bounds on all the input variables
+ubz = [ubu_k;ubi_k;ubP_k;ubFeff_k;ubnH2_k;ubqH2Oloss_k;ubT_bt_in];          %upper bounds on all the algebriac variables
+ubx = [ubT_k;ubMbt;ubT_bt_out;ubT_el_in;ubT_cw_out];                        %upper bounds on all the differential variables
+ubu = [ubU_el_k;ubq_lye_k;ubq_cw;ubqH2O];                                   %upper bounds on all the input variables
 
 end

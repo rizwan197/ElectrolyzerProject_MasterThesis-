@@ -31,6 +31,7 @@ i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current
 Feff_k0 = 0.97*ones(1,par.N);
 nH2_k0 = 6*ones(1,par.N);               %[mol/s]
 qH2Oloss_k0 = nH2_k0*par.Const.Mwt.*ones(1,par.N);%[g/s]
+T_bt_in0 = 73*ones(1,par.N);       %Initial guess for the temperature of lye mixture at the inlet of the buffer tank,[degC]
 
 %differential state variables('x')
 T_k0 = 75*ones(1,par.N);
@@ -39,14 +40,14 @@ T_bt_out0 = 70*ones(1,par.N);       %Initial guess for the temperature of lye mi
 T_El_in0 = 65*ones(1,par.N);        %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
 T_cw_out0 = 20*ones(1,par.N);       %initial guess for the exit temperature of the cooling water leaving heat exchanger,[deg C]
 
-z_guess = [u_k0 i_k0 P_k0 Feff_k0 nH2_k0 qH2Oloss_k0];
+z_guess = [u_k0 i_k0 P_k0 Feff_k0 nH2_k0 qH2Oloss_k0 T_bt_in0];
 x_guess = [T_k0 Mass_Bt0 T_bt_out0 T_El_in0 T_cw_out0];
 
 %initial guess for input variables('u')
 U_El_k_0 = 414.0301*ones(1,par.N);      %voltage across electrolyzers, [Volts]
 q_lye_k_0 = 6648*ones(1,par.N);         %lye flowrate, [g/s]
 q_cw_0 = 2.0698e4/N*ones(1,par.N);                      %cooling water flow rate, [g/s]
-q_H2O_0 = 324.2657/N*ones(1,par.N)                     %total water lost during electrolysis, [grams/sec]
+q_H2O_0 = 324.2657/N*ones(1,par.N);                     %total water lost during electrolysis, [grams/sec]
 
 u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 q_H2O_0]; 
 counter = 1;

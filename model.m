@@ -10,6 +10,8 @@ function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(N)
 %4N)Feff - ((.1*I/A)^2)/(f1+((.1*I/A)^2))*f2;
 %5N)nH2el - Feff*nc*I/(ze*FC);
 %6N)qH2Oloss - nH2*MwtH2O = 0;
+%7N)T_El_out_k(nEl) - ((q_lye_k(nEl)*T_k(nEl)*par.Const.CpLye - qH2Oloss_k(nEl)*T_k(nEl)*par.Const.Cp + qH2Oloss_k(nEl)*(par.Const.CpLye-par.Const.Cp)*...
+       % par.Const.Tref)/(q_lye_k(nEl)*par.Const.CpLye - qH2Oloss_k(nEl)*par.Const.CpLye)) = 0 ;
 
 %ODE eqautions are:
 %1N)dT/dt = (q_lye_k(nEl)*CpLye*(T_El_in-T_k(nEl)) + nc*(u_k(nEl)-cUtn)*i_k(nEl) - ...
@@ -41,8 +43,8 @@ par = parElectrolyzer(N);
 import casadi.*
 
 %% Define symbolic variables
-x = SX.sym('x',11*par.N);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
-eqnAlg = SX.zeros(6*par.N,1);
+x = SX.sym('x',12*par.N);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
+eqnAlg = SX.zeros(7*par.N,1);
 eqnDiff = SX.zeros(5*par.N,1);
 
 %variables for algebriac eqns.
@@ -52,6 +54,7 @@ P_k=[];
 Feff_k=[];
 nH2_k=[];
 qH2Oloss_k=[];
+T_bt_in_k=[];
 
 %variables for differential equations
 T_k=[];
@@ -69,13 +72,14 @@ for nEl = 1:par.N
     Feff_k = [Feff_k x(3*par.N+nEl)];           %faraday efficiency of each electrolyzer
     nH2_k = [nH2_k x(4*par.N+nEl)];             %hydrogen produced form each individual electrolyzer
     qH2Oloss_k = [qH2Oloss_k x(5*par.N+nEl)];   %water loss during electrolysis in kth electrolyzer
+    T_bt_in_k=[T_bt_in_k x(6*par.N+nEl)];       %temperature of lye stream entering into the buffer tank
     
     %differential variables
-    T_k = [T_k x(6*par.N+nEl)];               %temperature of the individual electrolyzer
-    Mass_Bt_k=[Mass_Bt_k x(7*par.N+nEl)];
-    T_bt_out_k=[T_bt_out_k x(8*par.N+nEl)];
-    T_El_in_k=[T_El_in_k x(9*par.N+nEl)];                   %temp of inlet lye stream coming into the electrolyzer
-    T_cw_out_k=[T_cw_out_k x(10*par.N+nEl)];
+    T_k = [T_k x(7*par.N+nEl)];                 %temperature of the individual electrolyzer
+    Mass_Bt_k=[Mass_Bt_k x(8*par.N+nEl)];
+    T_bt_out_k=[T_bt_out_k x(9*par.N+nEl)];     %temperature of lye stream leaving the buffer tank
+    T_El_in_k=[T_El_in_k x(10*par.N+nEl)];      %temp of inlet lye stream coming into the electrolyzer
+    T_cw_out_k=[T_cw_out_k x(11*par.N+nEl)];
 end
 
 %% Define inputs for the simulation (MVs for the dynamic simulation)
@@ -102,13 +106,16 @@ for nEl = 1:par.N
         9.84e-8*(273+T_k(nEl))^2;
     
     %model equations
-    eqnAlg(nEl) = u_k(nEl)*i_k(nEl)*par.EL(nEl).nc - P_k(nEl);                        %power = nc*UI
+    eqnAlg(nEl) = u_k(nEl)*i_k(nEl)*par.EL(nEl).nc - P_k(nEl);                          %power = nc*UI
     eqnAlg(par.N+nEl) = u_k(nEl) - (par.U(nEl).r1+par.U(nEl).r2*T_k(nEl))*i_k(nEl)/par.EL(nEl).A - par.U(nEl).s*log10(((par.U(nEl).t1+par.U(nEl).t2/T_k(nEl)+...
-        par.U(nEl).t3/(T_k(nEl)^2))*i_k(nEl)/par.EL(nEl).A)+1) - par.EL(nEl).Urev;  %U-I relationship
-    eqnAlg(2*par.N+nEl) = u_k(nEl)*par.EL(nEl).nc - U_El_k(nEl);                    %U(j).nc(j)=V
+        par.U(nEl).t3/(T_k(nEl)^2))*i_k(nEl)/par.EL(nEl).A)+1) - par.EL(nEl).Urev;      %U-I relationship
+    eqnAlg(2*par.N+nEl) = u_k(nEl)*par.EL(nEl).nc - U_El_k(nEl);                        %U(j).nc(j)=V
     eqnAlg(3*par.N+nEl) = Feff_k(nEl) - ((.1*i_k(nEl)/par.EL(nEl).A)^2)/(par.U(nEl).f1+((.1*i_k(nEl)/par.EL(nEl).A)^2))*par.U(nEl).f2;     %faraday efficiency
     eqnAlg(4*par.N+nEl) = nH2_k(nEl) - Feff_k(nEl)*par.EL(nEl).nc*i_k(nEl)/(par.Const.ze*par.Const.FC);%nH2, H2 production rate from individual electrolyzer
-    eqnAlg(5*par.N+nEl) = qH2Oloss_k(nEl) - nH2_k(nEl)*par.Const.Mwt;  %flowrate of water lost, [g/s]
+    eqnAlg(5*par.N+nEl) = qH2Oloss_k(nEl) - nH2_k(nEl)*par.Const.Mwt;                   %flowrate of water lost, [g/s]
+    eqnAlg(6*par.N+nEl) = T_bt_in_k(nEl) - ((q_lye_k(nEl)*T_k(nEl)*par.Const.CpLye - qH2Oloss_k(nEl)*T_k(nEl)*par.Const.Cp + qH2Oloss_k(nEl)*(par.Const.CpLye-par.Const.Cp)*...
+        par.Const.Tref)/(q_lye_k(nEl)*par.Const.CpLye - qH2Oloss_k(nEl)*par.Const.CpLye));    %calculation of T_bt_in_k
+  
 end
 
 qout_k = q_lye_k - qH2Oloss_k;
@@ -123,10 +130,10 @@ for nEl = 1:par.N
     %in net hydrogen production, since the netqloss changes whereas q_H2O_k is a
     %MV (constant parameter for intergration over time for dynamic states).
     
-    eqnDiff(2*par.N+nEl) = (qout_k(nEl)*par.Const.CpLye*(T_k(nEl)-T_bt_out_k(nEl)) + ...
+    eqnDiff(2*par.N+nEl) = (qout_k(nEl)*par.Const.CpLye*(T_bt_in_k(nEl)-T_bt_out_k(nEl)) + ...
         q_H2O_k(nEl)*(par.Const.Cp*T_bt_out_k(nEl) - par.Const.CpLye*T_bt_out_k(nEl)) ...
         - (qout_k(nEl)*par.Const.CpLye+q_H2O_k(nEl)*par.Const.Cp-q_lye_k(nEl)*par.Const.CpLye)*par.Const.Tref)/(Mass_Bt_k(nEl)*par.Const.CpLye);
-    %assuming T_H2O = T_bt_out, T_El_out = T_k
+    %assuming T_H2O = T_bt_out
 end
 
 %dynamic thermal balance for the heat exchanger, T_in and Tw_out are differential variables
@@ -142,8 +149,8 @@ for nEl=1:par.N
         (par.Hex.UAk*deltaT_LMTD(nEl)/(1000*par.Const.rho*par.Const.Cp*par.Const.Vck));%differential eqn for the cold stream exit temperature from heat exchanger
 end
 
-xAlg = x(1:6*par.N,1);
-xDiff = x(6*par.N+1:end,1);
+xAlg = x(1:7*par.N,1);
+xDiff = x(7*par.N+1:end,1);
 input = inp;
 
 dae = struct('x',xDiff,'z',xAlg,'p',input,'ode',eqnDiff,'alg',eqnAlg);

@@ -57,8 +57,8 @@ deltaT_El2 = xDiff(2)-xDiff(3*par.N+2);
 deltaT_El3 = xDiff(3)-xDiff(4*par.N);
 
 g = {g{:},eqnAlg, eqnDiff, Iden,eqnPnet,deltaT1_k,deltaT2_k,deltaT_El1,deltaT_El2,deltaT_El3};
-lbg = [lbg;zeros(11*par.N,1);IdenMin*ones(par.N,1);0;2e-3*ones(par.N,1);2e-3*ones(par.N,1);0;0;0];
-ubg = [ubg;zeros(11*par.N,1);IdenMax*ones(par.N,1);P0;inf*ones(par.N,1);inf*ones(par.N,1);30;30;30];
+lbg = [lbg;zeros(12*par.N,1);IdenMin*ones(par.N,1);0;2e-3*ones(par.N,1);2e-3*ones(par.N,1);0;0;0];
+ubg = [ubg;zeros(12*par.N,1);IdenMax*ones(par.N,1);P0;inf*ones(par.N,1);inf*ones(par.N,1);30;30;30];
 
 Objvol_H2 = SX.zeros(par.N,1);
 for nEl = 1:par.N
@@ -89,6 +89,8 @@ Pk = [];
 Feffk = [];
 nH2k = [];
 qH2Olossk = [];
+T_bt_in = []; %temp of lye at the buffer tank inlet
+
 Tk = [];
 massBt=[];
 T_bt_out=[];
@@ -107,17 +109,18 @@ for nEl = 1:par.N
     Feffk = [Feffk res(3*par.N+nEl)];           %faraday efficiency of each electrolyzer
     nH2k = [nH2k res(4*par.N+nEl)];             %hydrogen produced form each individual electrolyzer
     qH2Olossk = [qH2Olossk res(5*par.N+nEl)];   %water loss during electrolysis in kth electrolyzer
+    T_bt_in = [T_bt_in res(6*par.N+nEl)];       %temp of lye at the buffer tank inlet
     %optimal value of the differential state
-    Tk = [Tk res(6*par.N+nEl)];               %temperature of the individual electrolyzer
-    massBt = [massBt res(7*par.N+nEl)];
-    T_bt_out = [T_bt_out res(8*par.N+nEl)];
-    T_el_in = [T_el_in res(9*par.N+nEl)];         %temp of inlet lye stream coming into the electrolyzer
-    T_CW_out = [T_CW_out res(10*par.N+nEl)];
+    Tk = [Tk res(7*par.N+nEl)];               %temperature of the individual electrolyzer
+    massBt = [massBt res(8*par.N+nEl)];
+    T_bt_out = [T_bt_out res(9*par.N+nEl)];
+    T_el_in = [T_el_in res(10*par.N+nEl)];         %temp of inlet lye stream coming into the electrolyzer
+    T_CW_out = [T_CW_out res(11*par.N+nEl)];
     %optimal value of the inputs
-    Vss = [Vss res(11*par.N+nEl)];            %electrolyzer voltage
-    q_lyek = [q_lyek res(12*par.N+nEl)];      %lye flowrate
-    qf_cw = [qf_cw res(13*par.N+nEl)];
-    Qwater = [Qwater res(14*par.N+nEl)];
+    Vss = [Vss res(12*par.N+nEl)];            %electrolyzer voltage
+    q_lyek = [q_lyek res(13*par.N+nEl)];      %lye flowrate
+    qf_cw = [qf_cw res(14*par.N+nEl)];
+    Qwater = [Qwater res(15*par.N+nEl)];
 end
 
 %% Calculation of initial state vector
@@ -132,7 +135,7 @@ end
 % Ps_ini; 
 % Eff_El = 3.55./Ps_ini
 
-z0 = [Uk Ik Pk Feffk nH2k qH2Olossk];
+z0 = [Uk Ik Pk Feffk nH2k qH2Olossk T_bt_in];
 x0 = [Tk massBt T_bt_out T_el_in T_CW_out];
 u0 = [Vss q_lyek qf_cw Qwater];
 
