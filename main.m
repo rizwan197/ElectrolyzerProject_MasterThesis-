@@ -34,9 +34,9 @@ T_El_out0 = 80;                 %initial guess for the temperature of lye enteri
 
 %differential state variables('x')
 T_k0 = 75*ones(1,par.N);
-Psto_H20 = 20;      %initial H2 storage pressure (calculated from steady state solution) [bar]
-Psto_O20 = 20;      %initial O2 storage pressure (calculated from steady state solution) [bar]
-Mass_Bt0 = 1000000; %mass of the water in the buffer tank,[g]
+Psto_H20 = 25;      %initial H2 storage pressure (calculated from steady state solution) [bar]
+Psto_O20 = 25;      %initial O2 storage pressure (calculated from steady state solution) [bar]
+Mass_Bt0 = 6000000; %mass of the water in the buffer tank,[g]
 T_El_in0 = 65;      %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
 T_cw_out0 = 20;     %initial guess for the exit temperature of the cooling water leaving heat exchanger, [deg C]
 
