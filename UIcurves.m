@@ -47,12 +47,13 @@ plot(Iden,U(2,:),'k')
 hold on
 plot(Iden,U(3,:),'r')
 
+xlim([0, 220])
 xlabel('Current Density, mA/cm^2')
 ylabel('Voltage, V/cell')
 grid on
 legend('El 1 @ T = 80^{\circ}C','El 2 @ T = 80^{\circ}C','El 3 @ T = 80^{\circ}C')
 legend('location','Northwest')
-saveas(fig1,'UI_NewEl','epsc');
+saveas(fig1,'UI_DegEl','epsc');
 
 % %plot for U-I characteristics with the change in the temperature
 % set(0, 'DefaultAxesFontSize', 12,  'DefaultLineLineWidth', 1.5)

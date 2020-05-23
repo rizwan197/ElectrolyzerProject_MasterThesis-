@@ -22,16 +22,16 @@ loss_DegHex = ((row_DC_S2_Deg(:,end) - plot_C_S2_DegHex(:,end))./row_DC_S2_Deg(:
 
 %plots section 3.1
 set(0, 'DefaultAxesFontSize', 12,  'DefaultLineLineWidth', 1.5)
-fig1 = figure('NumberTitle', 'off');
+fig1 = figure('NumberTitle', 'off','Name', 'State 2: Flowsheet 1 vs Flowsheet 2');
 hold on
 plot(row_DC_S2_New(:,1),loss_NewHex,'b');
 hold on
 plot(row_DC_S2_New(:,1),loss_OSHex,'k');
 hold on
 plot(row_DC_S2_New(:,1),loss_DegHex,'r');
-legend('S_2F_1HX_{New}q_{lye,var} vs S_2F_2HX_{New}q_{lye,var}',...
-    'S_2F_1HX_{OS}q_{lye,var} vs S_2F_2HX_{OS}q_{lye,var}',...
-    'S_2F_1HX_{Deg}q_{lye,var} vs S_2F_2HX_{Deg}q_{lye,var}')
+legend('F_1HX_{BoL}q_{lye,var} vs F_2HX_{BoL}q_{lye,var}',...
+    'F_1HX_{OS}q_{lye,var} vs F_2HX_{OS}q_{lye,var}',...
+    'F_1HX_{EoL}q_{lye,var} vs F_2HX_{EoL}q_{lye,var}')
 legend('location','North')
 xlabel('Input Power, [MW]')
 ylabel('% Loss in production')
@@ -80,13 +80,13 @@ loss_DegHex_qfix = ((row_DC_S2_Deg_qlyeFix(:,end) - plot_C_S2_DegHex_qlyefix(:,e
 
 
 set(0, 'DefaultAxesFontSize', 12,  'DefaultLineLineWidth', 1.5)
-fig3 = figure('NumberTitle', 'off');
+fig3 = figure('NumberTitle', 'off','Name', 'State 2: Flowsheet 1 vs Flowsheet 2');
 hold on
 subplot(3,1,1)
 plot(row_DC_S2_New(:,1),loss_NewHex,'b');
 hold on
 plot(row_DC_S2_New(:,1),loss_NewHex_qfix,'--b');
-legend('S_2F_1HX_{New}q_{lye,var} vs S_2F_2HX_{New}q_{lye,var}','S_2F_1HX_{New}q_{lye,fix} vs S_2F_2HX_{New}q_{lye,fix}','location','north')%,'Orientation','Horizontal')
+legend('F_1HX_{BoL}q_{lye,var} vs F_2HX_{BoL}q_{lye,var}','F_1HX_{BoL}q_{lye,fix} vs F_2HX_{BoL}q_{lye,fix}','location','north')%,'Orientation','Horizontal')
 xlabel('Input Power, [MW]')
 ylabel('% Loss')
 xlim([1,7])
@@ -96,7 +96,7 @@ subplot(3,1,2)
 plot(row_DC_S2_New(:,1),loss_OSHex,'k');
 hold on
 plot(row_DC_S2_New(:,1),loss_OSHex_qfix,'--k');
-legend('S_2F_1HX_{OS}q_{lye,var} vs S_2F_2HX_{OS}q_{lye,var}','S_2F_1HX_{OS}q_{lye,fix} vs S_2F_2HX_{OS}q_{lye,fix}','location','north')%,'Orientation','Horizontal')
+legend('F_1HX_{OS}q_{lye,var} vs F_2HX_{OS}q_{lye,var}','F_1HX_{OS}q_{lye,fix} vs F_2HX_{OS}q_{lye,fix}','location','north')%,'Orientation','Horizontal')
 xlabel('Input Power, [MW]')
 ylabel('% Loss')
 xlim([1,7])
@@ -106,7 +106,7 @@ subplot(3,1,3)
 plot(row_DC_S2_New(:,1),loss_DegHex,'r');
 hold on
 plot(row_DC_S2_New(:,1),loss_DegHex_qfix,'--r');
-legend('S_2F_1HX_{Deg}q_{lye,var} vs S_2F_2HX_{Deg}q_{lye,var}','S_2F_1HX_{Deg}q_{lye,fix} vs S_2F_2HX_{Deg}q_{lye,fix}','location','north')%,'Orientation','Horizontal')
+legend('F_1HX_{EoL}q_{lye,var} vs F_2HX_{EoL}q_{lye,var}','F_1HX_{EoL}q_{lye,fix} vs F_2HX_{EoL}q_{lye,fix}','location','north')%,'Orientation','Horizontal')
 xlabel('Input Power, [MW]')
 ylabel('% Loss')
 grid on
