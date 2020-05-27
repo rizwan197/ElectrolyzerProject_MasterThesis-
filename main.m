@@ -96,7 +96,7 @@ flag = {flag{:},EXIT}';
 counter = counter+1;
 end
 
-save('Data_DCEl_S2_NewHex')
+% save('Data_DCEl_S2_NewHex')
 
 %% Build the plant model
 [xDiff, xAlg, input, eqnAlg, eqnDiff, F] = model(par.N);
