@@ -46,10 +46,10 @@ for i =1:N
 %     par.U(i).f2 = 0.98;
     
     %% Parameters for the thermal model
-    par.TherMo(i).CtS = 625/27;         %Suggested by Vidar, specific thermal capacity of electrolyzer i.e. Ct/P, [kJ/kWatts*C] 
+%     par.TherMo(i).CtS = 625/27;         %Suggested by Vidar, specific thermal capacity of electrolyzer i.e. Ct/P, [kJ/kWatts*C] 
     par.TherMo(i).Ct = 625/27*2134;     %Cts*Pnom [kJ/s], Assuming Pnom = 2134 kWatts                   
     par.TherMo(i).hc = 5.5;             %convective heat transfer coefficient W/m^2 C
-    par.TherMo(i).A_surf = 0.1;         %specific radition area per kA current per cell, [m^2/kA*Ncell]
+%     par.TherMo(i).A_surf = 0.1;         %specific radition area per kA current per cell, [m^2/kA*Ncell]
     par.TherMo(i).A_El = 0.1*5.72*230;  %surface area of the electrolyzer, A_surf*Inom*Ncell [m^2]
     
     %% Parameters for Faraday effeciency calculations

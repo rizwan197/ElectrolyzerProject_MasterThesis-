@@ -73,9 +73,13 @@ z_guess = z0;
 x_guess = x0;
 u_guess = u0;
 
+% z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
+% x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];
+% u0 = [Vss q_lyek qf_cw zH2 zO2 Qwater];
+
+T_bt_out = x0(par.N+4);
 T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer
 T_cw_out = x0(par.N+6);
-T_bt_out = x0(par.N+4);
 
 %Initial value of the MVs
 Vss = u0(1:par.N);
@@ -96,6 +100,8 @@ V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 for nEl = 1:par.N
     Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
     Qlossk(nEl) = par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(Tk(nEl)-par.EL(nEl).Ta) + par.sigma*par.em*((Tk(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4))/1000;
+    Qlyelossk(nEl) = (q_lyek(nEl)*par.Const.CpLye*(T_El_in_set-Tk(nEl)))/1000;
+    Qnet(nEl) = Qgenk(nEl)+Qlyelossk(nEl)-Qlossk(nEl);
 end
 
 %% Manipulated variables/Parameters for the dynamic simulation
@@ -123,7 +129,7 @@ ZO2 = zO2*ones(len,1);      %O2 valve displacement as a manipulated variable
 % ZO2(tstep:end) = .2;                         %change in O2 valve displacement
 
 qH2O = Qwater*ones(len,1);  %flow rate of water added to buffer tank as a manipulated variable, [g/s]
-qH2O(tstep:end)=Qwater*1.2;                  %incremental step change in the water flow rate
+% qH2O(tstep:end)=Qwater*1.2;                  %incremental step change in the water flow rate
 
 %% Initialize plotting variables
 Temp = zeros(len,N);                  %temp of the electrolyzer, [C]
@@ -146,9 +152,9 @@ Tw_out = zeros(len,1);
 SpecEl = zeros(len,1);
 PcompH2 = zeros(len,1);                 %compressor power for hydrogen, [watts]
 PcompO2 = zeros(len,1);                 %compressor power for oxygen, [watts]
-Qloss = zeros(len,1);                   %heat loss to surrounding in the electrolyzer, [watts]
-Qgen = zeros(len,1);                    %heat generated in the electrolyzer, [watts]
-Qlosslye = zeros(len,1);                %heat taken out by the lye from the electrolyzer, [watts]
+Qloss = zeros(len,N);                   %heat loss to surrounding in the electrolyzer, [watts]
+Qgen = zeros(len,N);                    %heat generated in the electrolyzer, [watts]
+Qlosslye = zeros(len,N);                %heat taken out by the lye from the electrolyzer, [watts]
 P_net = zeros(len,1);                   %net power to the electrolyzer assembly, [watts]
 
  %% Build the plant model- without PI controller
@@ -187,9 +193,10 @@ for i=1:len
     Tbtout(i) = full(r.xf(N+4));        %temperature of lye mixture at the exit of the buffer tank, [degC]
     Telin(i) = full(r.xf(N+5));         %temperature of lye going into the electrolyzer, [celsius]
     Tw_out(i) = full(r.xf(N+6));        %exit temperature of the cooling water, [celsius]
-%     eint_pstoH2(i) = full(r.xf(N+7));   %integrated error term for pstoH2
-%     eint_pstoO2(i) = full(r.xf(N+8));   %integrated error term for pstoO2
-%     eint_Mbt(i) = full(r.xf(N+9));      %integrated error term for the mass of the buffer tank
+    
+    % z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_el_out];
+    % x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];
+    % u0 = [Vss q_lyek qf_cw zH2 zO2 Qwater];
     
     for j=1:N
         U(i,j) = full(r.zf(j));             %voltage/cell, [V]
@@ -201,8 +208,12 @@ for i=1:len
         
         I_den(i,j) = 0.1*I(i,j)/par.EL(j).A;    %current density, [mA/cm^2]
         
-        Qloss(i,j) = par.TherMo(j).A_El*(par.TherMo(j).hc*(Temp(j)-par.EL(j).Ta) + ...
-            par.sigma*par.em*((Temp(j)+273.15)^4-(par.EL(j).Ta+273.15)^4));
+        %     Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
+        %     Qlossk(nEl) = par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(Tk(nEl)-par.EL(nEl).Ta) + par.sigma*par.em*((Tk(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4))/1000;
+        %     Qlyelossk(nEl) = (q_lyek(nEl)*par.Const.CpLye*(T_El_in_set-Tk(nEl)))/1000;
+        %     Qnet(nEl) = Qgenk(nEl)+Qlyelossk(nEl)-Qlossk(nEl)
+        Qloss(i,j) = par.TherMo(j).A_El*(par.TherMo(j).hc*(Temp(i,j)-par.EL(j).Ta) + ...
+            par.sigma*par.em*((Temp(i,j)+273.15)^4-(par.EL(j).Ta+273.15)^4));
         %heat loss to surrounding in the electrolyzer, [watts]
         
         Qgen(i,j) = par.EL(j).nc*(U(i,j)-par.EL(j).Utn)*I(i,j);
@@ -210,10 +221,12 @@ for i=1:len
         
         Qlosslye(i,j) = qlye(i,j)*par.Const.CpLye*(Telin(i)-Temp(i,j));
         %heat taken out by the lye from the electrolyzer, [watts]
+        Qnet(i,j) = Qgen(i,j)+Qlosslye(i,j)-Qloss(i,j);
         
         V_H2(i,j) = nH2elout(i,j)*0.0224136*3600;%hydrogen production rate from individual electrolyzer, [Nm3/h]
         Ps(i,j) = P(i,j)/(1000*V_H2(i,j));%Specific electricity consumption, [kWh/Nm3]
     end
+    
     
 
     P_net(i)=sum(P(i,:));
@@ -291,6 +304,31 @@ plot(mBufferT./1000)
 ylabel('Mass_{bt}, [kg]')
 xlabel('Time, s')
 
+figure()
+subplot(2,3,1)
+plot(Qnet(:,1))
+xlabel('Time, s')
+ylabel('Q_{net,1}')
+subplot(2,3,2)
+plot(Qnet(:,2))
+xlabel('Time, s')
+ylabel('Q_{net,2}')
+subplot(2,3,3)
+plot(Qnet(:,3))
+xlabel('Time, s')
+ylabel('Q_{net,3}')
+subplot(2,3,4)
+plot(Temp(:,1))
+xlabel('Time, s')
+ylabel('T_{el,1}')
+subplot(2,3,5)
+plot(Temp(:,2))
+xlabel('Time, s')
+ylabel('T_{el,2}')
+subplot(2,3,6)
+plot(Temp(:,3))
+xlabel('Time, s')
+ylabel('T_{el,3}')
 %% Creating the data file
 % save('data_Step_qlye2_40hr')
 % load data_q1step3000_MVQcool_12hr

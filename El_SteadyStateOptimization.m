@@ -235,4 +235,12 @@ z0 = [Uk Ik Pk Feffk nH2k qH2Olossk nH2El_tot nH2out_tot nO2El_tot nO2out_tot T_
 x0 = [Tk PstoH2 PstoO2 massBt T_bt_out T_el_in T_CW_out];
 u0 = [Vss q_lyek qf_cw zH2 zO2 Qwater];
 
+for nEl = 1:par.N
+    Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
+    Qlossk(nEl) = par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(Tk(nEl)-par.EL(nEl).Ta) + par.sigma*par.em*((Tk(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4))/1000;
+    Qlyelossk(nEl) = (q_lyek(nEl)*par.Const.CpLye*(T_el_in-Tk(nEl)))/1000;
+    Qnet(nEl) = Qgenk(nEl)+Qlyelossk(nEl)-Qlossk(nEl);
+end
+
+
 end
