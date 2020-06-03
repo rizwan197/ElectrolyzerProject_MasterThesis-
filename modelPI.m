@@ -1,4 +1,4 @@
-function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0)
+function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI)
 %This function file contains the mathematical model for the system of
 %electrolyzers + PI controller
 %This plant model includes extra states for the integrated error of the CVs 
@@ -110,24 +110,24 @@ Mass_Btset = inp(2*par.N+4);
 %PI controller for pressure in the hydrogen storage tank
 eint_pstoH2 = x(7*par.N+12);          %eint in pstoH2
 e_pstoH2 = Psto_H2 - pstoH2set;      %error in pstoH2
-Kc_pstoH2PI = -12.5;                %controller gain
-taui_pstoH2PI = 320;                %integral time constant
+Kc_pstoH2PI = Kc(1);                %controller gain
+taui_pstoH2PI = tauI(1);                %integral time constant
 zH2ini = u0(1);                     %initial value of MV i.e. zH2
 zH2 = PIcontroller(zH2ini,Kc_pstoH2PI,taui_pstoH2PI,e_pstoH2,eint_pstoH2);
 
 %PI controller for pressure in the oxygen storage tank
 eint_pstoO2 = x(7*par.N+13);          %eint in mass of the buffer tank
 e_pstoO2 = Psto_O2 - pstoO2set;      %error
-Kc_pstoO2PI = -12.5;                %controller gain
-taui_pstoO2PI = 320;                %integral time constant
+Kc_pstoO2PI = Kc(2);                %controller gain
+taui_pstoO2PI = tauI(2);                %integral time constant
 zO2ini = u0(2);                     %initial value of MV i.e. zO2
 zO2 = PIcontroller(zO2ini,Kc_pstoO2PI,taui_pstoO2PI,e_pstoO2,eint_pstoO2);
 
 %PI controller for mass in the buffer tank
 eint_Mbt = x(7*par.N+14);             %eint in mass of the buffer tank
 eMass_Bt = Mass_Bt - Mass_Btset;    %error
-Kc_MassBtPI = 0.021;                %controller gain
-taui_MassBtPI = 200;                %integral time constant
+Kc_MassBtPI = Kc(3);                %controller gain
+taui_MassBtPI = tauI(3);                %integral time constant
 q_H2Oini = u0(3);                   %initial value of MV i.e. qH2O
 q_H2O = PIcontroller(q_H2Oini,Kc_MassBtPI,taui_MassBtPI,eMass_Bt,eint_Mbt);
 

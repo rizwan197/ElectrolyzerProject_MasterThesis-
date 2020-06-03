@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 40;                           %no. of hours
+num_hr = .25;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -102,14 +102,14 @@ end
 V_El = zeros(len,N);              %voltage across the electrolyzer, [Watt], len is the length of time vector
 for j = 1:N
     V_El(1:end,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
-%         V_El(tstep+500:end,j)=Vss(j)*1.02;
+        V_El(tstep+500:end,j)=Vss(j)*1.02;
 end
 
 qlye = zeros(len,N);                   %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
-qlye(tstep+500:end,3) = q_lyek(3)*1.2;
+% qlye(tstep+500:end,3) = q_lyek(3)*1.2;
 
 q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
 % q_cw(tstep+500:end) = qf_cw*1.2;                  %incremental step change in cooling water flowrate
@@ -143,14 +143,16 @@ P_net = zeros(len,1);                   %net power to the electrolyzer assembly,
 
 %% Build the plant model- with PI controller
 MV_0 = [zH2 zO2 Qwater];
-[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(par.N,MV_0);
+Kc = 1.*[-20 -20 0.021];
+tauI = 1.*[200 200 200];
+[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(par.N,MV_0,Kc,tauI);
 x0 = [x0,0,0,0];%input vector for the differential states including the eint terms
 
 %define the setpoint trajectory
 pstoH2set = x0(par.N+1)*ones(len,1);
-% pstoH2set(tstep:end) = 20;
+% pstoH2set(tstep:end) = 24.75;
 pstoO2set = x0(par.N+2)*ones(len,1);
-% pstoO2set(tstep:end) = 20;
+% pstoO2set(tstep:end) = 24.75;
 Mass_Btset = x0(par.N+3)*ones(len,1); %setpoint for the mass in the buffer tank
 % Mass_Btset(tstep:end) = 3500000;
 
@@ -220,22 +222,22 @@ for i=1:len
     
     %% Calculate the input variable trajectory with PI controller
     % for storage pressure of the hydrogen tank
-    Kc_pstoH2PI = -12.5;                %controller gain
-    taui_pstoH2PI = 320;                %integral time constant
+    Kc_pstoH2PI = Kc(1);                %controller gain
+    taui_pstoH2PI = tauI(1);                %integral time constant
     e_pstoH2 = (PstoH2(i) - pstoH2set(i));%error term
     ZH2(i) = PIcontroller(zH2,Kc_pstoH2PI,taui_pstoH2PI,e_pstoH2,eint_pstoH2(i));
     
     
     %for storage pressure of the oxygen tank
-    Kc_pstoO2PI = -12.5;                %controller gain
-    taui_pstoO2PI = 320;                %integral time constant
+    Kc_pstoO2PI = Kc(2);                %controller gain
+    taui_pstoO2PI = tauI(2);                %integral time constant
     e_pstoO2 = (PstoO2(i) - pstoO2set(i));
     ZO2(i) = PIcontroller(zO2,Kc_pstoO2PI,taui_pstoO2PI,e_pstoO2,eint_pstoO2(i));
 
     
     %for mass in the buffer tank
-    Kc_MassBtPI = 0.021;
-    taui_MassBtPI = 200;
+    Kc_MassBtPI = Kc(3);
+    taui_MassBtPI = tauI(3);
     e_Mbt = mBufferT(i) - Mass_Btset(i);
     q_H2O(i) = PIcontroller(Qwater,Kc_MassBtPI,taui_MassBtPI,e_Mbt,eint_Mbt(i));
     
@@ -249,20 +251,20 @@ end
 
 %% Plotting the results
 
-figure()
-subplot(2,1,1)
-plot(V_H2)
-xlabel('Time, s')
-ylabel('H_2 production rate, [Nm^3/hr]')
-legend('El 1','El 2', 'El 3')
-grid on
-subplot(2,1,2)
-plot(Ps)
-xlabel('Time, s')
-ylabel('Specific electricity consumption, [kWh/Nm^3]')
-ylim([4.3, 4.7])
-legend('El 1','El 2', 'El 3')
-grid on
+% figure()
+% subplot(2,1,1)
+% plot(V_H2)
+% xlabel('Time, s')
+% ylabel('H_2 production rate, [Nm^3/hr]')
+% legend('El 1','El 2', 'El 3')
+% grid on
+% subplot(2,1,2)
+% plot(Ps)
+% xlabel('Time, s')
+% ylabel('Specific electricity consumption, [kWh/Nm^3]')
+% ylim([4.3, 4.7])
+% legend('El 1','El 2', 'El 3')
+% grid on
 
 figure()
 subplot(6,2,1)
@@ -302,7 +304,7 @@ xlabel('Time, s')
 ylabel('I_{den}, mA/cm^2')
 subplot(6,2,6)
 plot(Telin)
-ylim([49 51])
+ylim([49 52])
 xlabel('Time, s')
 ylabel('T_{El,in}, [ ^0C]')
 subplot(6,2,8)
@@ -322,44 +324,47 @@ ylabel('Mass_{bt}, [kg]')
 xlabel('Time, s')
 
 
-figure()
-subplot(2,3,1)
-plot(Qnet(:,1))
-xlabel('Time, s')
-ylabel('Q_{net,1}')
-subplot(2,3,2)
-plot(Qnet(:,2))
-xlabel('Time, s')
-ylabel('Q_{net,2}')
-subplot(2,3,3)
-plot(Qnet(:,3))
-xlabel('Time, s')
-ylabel('Q_{net,3}')
-subplot(2,3,4)
-plot(Temp(:,1))
-xlabel('Time, s')
-ylabel('T_{el,1}')
-subplot(2,3,5)
-plot(Temp(:,2))
-xlabel('Time, s')
-ylabel('T_{el,2}')
-subplot(2,3,6)
-plot(Temp(:,3))
-xlabel('Time, s')
-ylabel('T_{el,3}')
+% figure()
+% subplot(2,3,1)
+% plot(Qnet(:,1))
+% xlabel('Time, s')
+% ylabel('Q_{net,1}')
+% subplot(2,3,2)
+% plot(Qnet(:,2))
+% xlabel('Time, s')
+% ylabel('Q_{net,2}')
+% subplot(2,3,3)
+% plot(Qnet(:,3))
+% xlabel('Time, s')
+% ylabel('Q_{net,3}')
+% subplot(2,3,4)
+% plot(Temp(:,1))
+% xlabel('Time, s')
+% ylabel('T_{el,1}')
+% subplot(2,3,5)
+% plot(Temp(:,2))
+% xlabel('Time, s')
+% ylabel('T_{el,2}')
+% subplot(2,3,6)
+% plot(Temp(:,3))
+% xlabel('Time, s')
+% ylabel('T_{el,3}')
 
-for i=1:len
-Q_overall(i) = sum(Qnet(i,:));
-end
 figure()
 subplot(2,1,1)
-plot(Q_overall)
+plot(V_El)
 xlabel('Time, s')
-ylabel('Q_{net,sys}')
+ylabel('Cell voltage')
 subplot(2,1,2)
-plot(Telin)
+plot(I_den)
 xlabel('Time, s')
-ylabel('T_{el,in}')
+ylabel('I_{den}, mA/cm^2')
+
+figure()
+plot(P_net./1e6)
+xlabel('Time, s')
+ylabel('P_{net},MW')
+
 %% Creating the data file
- save('data_closeloop_qlye3step_40hr')
+% save('data_closeloop_Velstep_3hr')
 % load data_q1step3000_MVQcool_12hr

@@ -13,7 +13,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 1;                           %no. of hours
+num_hr = .5;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -129,7 +129,7 @@ ZO2 = zO2*ones(len,1);      %O2 valve displacement as a manipulated variable
 % ZO2(tstep:end) = .2;                         %change in O2 valve displacement
 
 qH2O = Qwater*ones(len,1);  %flow rate of water added to buffer tank as a manipulated variable, [g/s]
-% qH2O(tstep:end)=Qwater*1.2;                  %incremental step change in the water flow rate
+qH2O(tstep:end)=Qwater*1.2;                  %incremental step change in the water flow rate
 
 %% Initialize plotting variables
 Temp = zeros(len,N);                  %temp of the electrolyzer, [C]
@@ -304,31 +304,44 @@ plot(mBufferT./1000)
 ylabel('Mass_{bt}, [kg]')
 xlabel('Time, s')
 
+
 figure()
-subplot(2,3,1)
-plot(Qnet(:,1))
+subplot(2,1,1)
+plot(qH2O./1000)
 xlabel('Time, s')
-ylabel('Q_{net,1}')
-subplot(2,3,2)
-plot(Qnet(:,2))
+ylabel('q_{H_2O}, kg/s')
+subplot(2,1,2)
+plot(mBufferT./1000)
+ylabel('Mass_{bt}, [kg]')
 xlabel('Time, s')
-ylabel('Q_{net,2}')
-subplot(2,3,3)
-plot(Qnet(:,3))
-xlabel('Time, s')
-ylabel('Q_{net,3}')
-subplot(2,3,4)
-plot(Temp(:,1))
-xlabel('Time, s')
-ylabel('T_{el,1}')
-subplot(2,3,5)
-plot(Temp(:,2))
-xlabel('Time, s')
-ylabel('T_{el,2}')
-subplot(2,3,6)
-plot(Temp(:,3))
-xlabel('Time, s')
-ylabel('T_{el,3}')
+
+
+%% Plot for checking Qnet in each electrolyzer
+% figure()
+% subplot(2,3,1)
+% plot(Qnet(:,1))
+% xlabel('Time, s')
+% ylabel('Q_{net,1}')
+% subplot(2,3,2)
+% plot(Qnet(:,2))
+% xlabel('Time, s')
+% ylabel('Q_{net,2}')
+% subplot(2,3,3)
+% plot(Qnet(:,3))
+% xlabel('Time, s')
+% ylabel('Q_{net,3}')
+% subplot(2,3,4)
+% plot(Temp(:,1))
+% xlabel('Time, s')
+% ylabel('T_{el,1}')
+% subplot(2,3,5)
+% plot(Temp(:,2))
+% xlabel('Time, s')
+% ylabel('T_{el,2}')
+% subplot(2,3,6)
+% plot(Temp(:,3))
+% xlabel('Time, s')
+% ylabel('T_{el,3}')
 %% Creating the data file
 % save('data_Step_qlye2_40hr')
 % load data_q1step3000_MVQcool_12hr
