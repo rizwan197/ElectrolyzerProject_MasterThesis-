@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = .25;                           %no. of hours
+num_hr = 5;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -109,7 +109,7 @@ qlye = zeros(len,N);                   %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
-% qlye(tstep+500:end,3) = q_lyek(3)*1.2;
+% qlye(tstep+500:end,1) = q_lyek(1)*1.2;
 
 q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
 % q_cw(tstep+500:end) = qf_cw*1.2;                  %incremental step change in cooling water flowrate
@@ -220,7 +220,7 @@ for i=1:len
         Ps(i,j) = P(i,j)/(1000*V_H2(i,j));%Specific electricity consumption, [kWh/Nm3]
     end
     
-    %% Calculate the input variable trajectory with PI controller
+    %% Calculate the input trajectory with PI controller
     % for storage pressure of the hydrogen tank
     Kc_pstoH2PI = Kc(1);                %controller gain
     taui_pstoH2PI = tauI(1);                %integral time constant
@@ -241,7 +241,7 @@ for i=1:len
     e_Mbt = mBufferT(i) - Mass_Btset(i);
     q_H2O(i) = PIcontroller(Qwater,Kc_MassBtPI,taui_MassBtPI,e_Mbt,eint_Mbt(i));
     
-    P_net(i)=sum(P(i,:));
+    P_net(i)=sum(P(i,:)); 
     
     if rem(i,1000)==0
         disp(i)
@@ -366,5 +366,5 @@ xlabel('Time, s')
 ylabel('P_{net},MW')
 
 %% Creating the data file
-% save('data_closeloop_Velstep_3hr')
+save('data_closeloop_Velstep_40hr')
 % load data_q1step3000_MVQcool_12hr
