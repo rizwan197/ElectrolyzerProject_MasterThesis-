@@ -150,10 +150,16 @@ ubg = [ubg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMax*ones(par.N,1);P0;30;30;3
 % ubg = [ubg;zeros(7*par.N+11,1);zeros(par.N-1,1);IdenMax*ones(par.N,1);P0];
 
 Objvol_H2 = SX.zeros(par.N,1);
+PconsEl = SX.zeros(par.N,1);
+qlyeEl = SX.zeros(par.N,1);
 for nEl = 1:par.N
     Objvol_H2(nEl) = (xAlg(4*par.N+nEl)*0.0224136*3600);%[Nm3/h]
+    PconsEl(nEl) = xAlg(2*par.N+nEl);
+    qlyeEl(nEl) = input(par.N+nEl);
 end
-J = -(Objvol_H2(1)+Objvol_H2(2)+Objvol_H2(3));
+Pcons = sum(PconsEl);
+qlyeTot = sum(qlyeEl);
+J = -(Objvol_H2(1)+Objvol_H2(2)+Objvol_H2(3));%-0.001*qlyeTot+0.0001*Pcons;
 
 % J = 10;
 

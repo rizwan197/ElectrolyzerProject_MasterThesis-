@@ -101,12 +101,12 @@ end
 row_C_S1(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
 
 if strcmp(EXIT,'Solve_Succeeded')
-    ac_C_S1(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_set)/30, 2e-3/(T_El_in_set - par.Tw_in), 2e-3/(T_bt_out-T_cw_out),...
+    ac_C_S2(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (Tk-T_El_in_set)/30, 2e-3/(T_El_in_set - par.Tw_in), 2e-3/(T_bt_out-T_cw_out),...
         qlye_kgs/10, 0.5./qlye_kgs, qcw_kgs/80 1e-5/qcw_kgs];
-    plot_C_S1_DegHex(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
+    plot_C_S2_DegHex(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
 else
-    ac_C_S1(counter,:) = NaN*ones(1,7*par.N+4);
-    plot_C_S1_DegHex(counter,:) = 0*ones(1,4*par.N+7);
+    ac_C_S2(counter,:) = NaN*ones(1,7*par.N+4);
+    plot_C_S2_DegHex(counter,:) = 0*ones(1,4*par.N+7);
 end
 
 flag = {flag{:},EXIT}';
