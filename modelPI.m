@@ -105,7 +105,7 @@ pstoH2set = inp(2*par.N+2);
 pstoO2set = inp(2*par.N+3);
 Mass_Btset = inp(2*par.N+4);
 
-%% Additional state for integrated error in PI controller
+%% eint for zero steady state effect PI controller
 
 %PI controller for pressure in the hydrogen storage tank
 eint_pstoH2 = x(7*par.N+12);          %eint in pstoH2
@@ -130,6 +130,7 @@ Kc_MassBtPI = Kc(3);                %controller gain
 taui_MassBtPI = tauI(3);                %integral time constant
 q_H2Oini = u0(3);                   %initial value of MV i.e. qH2O
 q_H2O = PIcontroller(q_H2Oini,Kc_MassBtPI,taui_MassBtPI,eMass_Bt,eint_Mbt);
+
 
 
 %% Model equations

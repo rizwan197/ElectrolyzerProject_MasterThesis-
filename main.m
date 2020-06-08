@@ -10,8 +10,10 @@ import casadi.*
 N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
+
+
 %% Inputs for the simulation
-num_hr = 5;                           %no. of hours
+num_hr = 1;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -19,10 +21,43 @@ tsamp = t0:ts:tf;
 len = length(tsamp);                    %number of simulation time steps
 tstep = 200;
 
-%% Initial guess for steady state solution using IPOPT
+%Disturbance is total power
+Psupp = [5e6 4e6];
 
-%disturbance is total power
-Pnet = 5.84e6;%1900e3*par.N; %6.3MW total input power
+%% Initialize plotting variables
+Temp = zeros(len*length(Psupp),N);                  %temp of the electrolyzer, [C]
+PstoH2 = zeros(len*length(Psupp),1);                %H2 storage pressure, [bar]
+PstoO2 = zeros(len*length(Psupp),1);                %O2 storage pressure, [bar]
+U = zeros(len*length(Psupp),1);                       %voltage/cell in each of the electrolyzer, [V]
+I = zeros(len*length(Psupp),1);                       %current in each electrolyzer, [A]
+P = zeros(len*length(Psupp),1);
+I_den = zeros(len*length(Psupp),1);                   %current density in the electrolyzer, [A/m^2]
+nH2in = zeros(len*length(Psupp),1);                   %net hydrogen flow rate in to the storage, [mol/s]
+nH2out = zeros(len*length(Psupp),1);                  %net hydrogen flowrate out from the storage, [mol/s]
+nH2elout = zeros(len*length(Psupp),1);                %hydrogen flowrate from each of the individual electrolyzer, [mol/s]
+nO2in = zeros(len*length(Psupp),1);                   %net oxygen flow rate in to the storage, [mol/s]
+nO2out = zeros(len*length(Psupp),1);                  %net oxygen flowrate out from the storage, [mol/s]
+Telout = zeros(len*length(Psupp),1);
+Tbtout = zeros(len*length(Psupp),1);                  %temperature of lye mixture at the exit of the buffer tank, [degC]
+Telin = zeros(len*length(Psupp),1);
+mBufferT = zeros(len*length(Psupp),1);
+Tw_out = zeros(len*length(Psupp),1);
+SpecEl = zeros(len*length(Psupp),1);
+PcompH2 = zeros(len*length(Psupp),1);                 %compressor power for hydrogen, [watts]
+PcompO2 = zeros(len*length(Psupp),1);                 %compressor power for oxygen, [watts]
+Qloss = zeros(len*length(Psupp),1);                   %heat loss to surrounding in the electrolyzer, [watts]
+Qgen = zeros(len*length(Psupp),1);                    %heat generated in the electrolyzer, [watts]
+Qlosslye = zeros(len*length(Psupp),1);                %heat taken out by the lye from the electrolyzer, [watts]
+P_net = zeros(len*length(Psupp),1);                   %net power to the electrolyzer assembly, [watts]
+
+V_El = zeros(len*length(Psupp),N);                  %voltage across the electrolyzer, [Watt], len is the length of time vector
+qlye = zeros(len*length(Psupp),N);                  %lye flowrate, [g/s]
+q_cw = zeros(len*length(Psupp),1);                  %cooling water flowrate
+
+for distInt = 1:length(Psupp)
+Pnet = Psupp(distInt);%total input power
+
+%% Initial guess for steady state solution using IPOPT
 
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
@@ -71,10 +106,6 @@ z_guess = z0;
 x_guess = x0;
 u_guess = u0;
 
-T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer
-T_cw_out = x0(par.N+6);
-T_bt_out = x0(par.N+4);
-
 %Initial value of the MVs
 Vss = u0(1:par.N);
 q_lyek = u0(par.N+1:2*par.N);
@@ -84,62 +115,43 @@ qcw_kgs = qf_cw/1000;
 zH2 = u0(2*par.N+2);
 zO2 = u0(2*par.N+3);
 Qwater = u0(2*par.N+4);
+
 nH2 = sum(z0(4*par.N+1:5*par.N));
+Tk = x0(1:par.N);
+T_El_in = x0(par.N+5);      %temperature of lye entering the electrolyzer
+T_cw_out = x0(par.N+6);
+T_bt_out = x0(par.N+4);
 
 Pcons = sum(z0(2*par.N+1:3*par.N));
 Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
-Tk = x0(1:par.N);
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
-
 for nEl = 1:par.N
     Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
     Qlossk(nEl) = par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(Tk(nEl)-par.EL(nEl).Ta) + par.sigma*par.em*((Tk(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4))/1000;
 end
 
+
 %% Manipulated variables/Parameters for the dynamic simulation
 %these are the degree of freedoms that we will utilise to control the system
 
-V_El = zeros(len,N);              %voltage across the electrolyzer, [Watt], len is the length of time vector
+
+for i=1+len*(distInt-1):len*distInt
+
 for j = 1:N
-    V_El(1:end,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
-        V_El(tstep+500:end,j)=Vss(j)*1.02;
+    V_El(i,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
+%         V_El(tstep+500:end,j)=Vss(j)*1.02;
 end
 
-qlye = zeros(len,N);                   %lye flowrate, [g/s]
+
 for j = 1:N
-    qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
+    qlye(i,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
 % qlye(tstep+500:end,1) = q_lyek(1)*1.2;
 
-q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
+q_cw(i) = qf_cw;                     %cooling water flow rate as a manipulated variable, [g/s]
 % q_cw(tstep+500:end) = qf_cw*1.2;                  %incremental step change in cooling water flowrate
+end
 
-
-%% Initialize plotting variables
-Temp = zeros(len,N);                  %temp of the electrolyzer, [C]
-PstoH2 = zeros(len,1);                %H2 storage pressure, [bar]
-PstoO2 = zeros(len,1);                %O2 storage pressure, [bar]
-U = zeros(len,1);                       %voltage/cell in each of the electrolyzer, [V]
-I = zeros(len,1);                       %current in each electrolyzer, [A]
-P = zeros(len,1);
-I_den = zeros(len,1);                   %current density in the electrolyzer, [A/m^2]
-nH2in = zeros(len,1);                   %net hydrogen flow rate in to the storage, [mol/s]
-nH2out = zeros(len,1);                  %net hydrogen flowrate out from the storage, [mol/s]
-nH2elout = zeros(len,1);                %hydrogen flowrate from each of the individual electrolyzer, [mol/s]
-nO2in = zeros(len,1);                   %net oxygen flow rate in to the storage, [mol/s]
-nO2out = zeros(len,1);                  %net oxygen flowrate out from the storage, [mol/s]
-Telout = zeros(len,1);
-Tbtout = zeros(len,1);                  %temperature of lye mixture at the exit of the buffer tank, [degC]
-Telin = zeros(len,1);
-mBufferT = zeros(len,1);
-Tw_out = zeros(len,1);
-SpecEl = zeros(len,1);
-PcompH2 = zeros(len,1);                 %compressor power for hydrogen, [watts]
-PcompO2 = zeros(len,1);                 %compressor power for oxygen, [watts]
-Qloss = zeros(len,1);                   %heat loss to surrounding in the electrolyzer, [watts]
-Qgen = zeros(len,1);                    %heat generated in the electrolyzer, [watts]
-Qlosslye = zeros(len,1);                %heat taken out by the lye from the electrolyzer, [watts]
-P_net = zeros(len,1);                   %net power to the electrolyzer assembly, [watts]
 
 %% Build the plant model- with PI controller
 MV_0 = [zH2 zO2 Qwater];
@@ -149,17 +161,20 @@ tauI = 1.*[200 200 200];
 x0 = [x0,0,0,0];%input vector for the differential states including the eint terms
 
 %define the setpoint trajectory
-pstoH2set = x0(par.N+1)*ones(len,1);
+pstoH2set = x0(par.N+1)*ones(len*length(Psupp),1);
+% pstoH2set = 24.77*ones(len*length(Psupp),1);
 % pstoH2set(tstep:end) = 24.75;
-pstoO2set = x0(par.N+2)*ones(len,1);
+pstoO2set = x0(par.N+2)*ones(len*length(Psupp),1);
+% pstoO2set = 24.77*ones(len*length(Psupp),1);
 % pstoO2set(tstep:end) = 24.75;
-Mass_Btset = x0(par.N+3)*ones(len,1); %setpoint for the mass in the buffer tank
+Mass_Btset = x0(par.N+3)*ones(len*length(Psupp),1); %setpoint for the mass in the buffer tank
+% Mass_Btset = 3000*ones(len*length(Psupp),1);
 % Mass_Btset(tstep:end) = 3500000;
 
 
 %% Integrate plant over the time horizon
 
-for i=1:len
+for i=1+len*(distInt-1):len*distInt
     %i = timestamp
     %j = electrolyzer sequence
     
@@ -170,12 +185,12 @@ for i=1:len
     
     %% Storing values in plotting variables
     
-    %calculation of compressor power
-    PcompH2(i) = full(((r.zf(6*N+1)*par.Comp.k*par.Const.R*par.Comp.Tel)/...
-        (par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+1)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
-    PcompO2(i) = full(((r.zf(6*N+3)*par.Comp.k*par.Const.R*par.Comp.Tel)/...
-        (par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+2)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
-    %assuming same k and Tel for O2
+%     %calculation of compressor power
+%     PcompH2(i) = full(((r.zf(6*N+1)*par.Comp.k*par.Const.R*par.Comp.Tel)/...
+%         (par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+1)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
+%     PcompO2(i) = full(((r.zf(6*N+3)*par.Comp.k*par.Const.R*par.Comp.Tel)/...
+%         (par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+2)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
+%     %assuming same k and Tel for O2
     
     
     nH2in(i) = full(r.zf(6*N+1));     %net hydrogen flow rate in to the storage at all timestamps, [mol/s]
@@ -222,14 +237,14 @@ for i=1:len
     
     %% Calculate the input trajectory with PI controller
     % for storage pressure of the hydrogen tank
-    Kc_pstoH2PI = Kc(1);                %controller gain
+    Kc_pstoH2PI = Kc(1);                    %controller gain
     taui_pstoH2PI = tauI(1);                %integral time constant
-    e_pstoH2 = (PstoH2(i) - pstoH2set(i));%error term
+    e_pstoH2 = (PstoH2(i) - pstoH2set(i));  %error term
     ZH2(i) = PIcontroller(zH2,Kc_pstoH2PI,taui_pstoH2PI,e_pstoH2,eint_pstoH2(i));
     
     
     %for storage pressure of the oxygen tank
-    Kc_pstoO2PI = Kc(2);                %controller gain
+    Kc_pstoO2PI = Kc(2);                    %controller gain
     taui_pstoO2PI = tauI(2);                %integral time constant
     e_pstoO2 = (PstoO2(i) - pstoO2set(i));
     ZO2(i) = PIcontroller(zO2,Kc_pstoO2PI,taui_pstoO2PI,e_pstoO2,eint_pstoO2(i));
@@ -247,6 +262,8 @@ for i=1:len
         disp(i)
     end
     
+end
+
 end
 
 %% Plotting the results
@@ -281,17 +298,14 @@ xlabel('Time, s')
 ylabel('q_{cw}, kg/s')
 subplot(6,2,7)
 plot(ZH2)
-ylim([.4 .5])
 xlabel('Time, s')
 ylabel('z_{H_2}')
 subplot(6,2,9)
 plot(ZO2)
-ylim([.4 .5])
 xlabel('Time, s')
 ylabel('z_{O_2}')
 subplot(6,2,11)
 plot(q_H2O./1000)
-ylim([.28 .29])
 xlabel('Time, s')
 ylabel('q_{H_2O}, kg/s')
 subplot(6,2,2)
@@ -304,22 +318,18 @@ xlabel('Time, s')
 ylabel('I_{den}, mA/cm^2')
 subplot(6,2,6)
 plot(Telin)
-ylim([49 52])
 xlabel('Time, s')
 ylabel('T_{El,in}, [ ^0C]')
 subplot(6,2,8)
 plot(PstoH2)
-ylim([24 25])
 xlabel('Time, s')
 ylabel('p_{sto} H_2, bar')
 subplot(6,2,10)
 plot(PstoO2)
-ylim([24 25])
 xlabel('Time, s')
 ylabel('p_{sto} O_2, bar')
 subplot(6,2,12)
 plot(mBufferT./1000)
-ylim([2999 3001])
 ylabel('Mass_{bt}, [kg]')
 xlabel('Time, s')
 
@@ -366,5 +376,5 @@ xlabel('Time, s')
 ylabel('P_{net},MW')
 
 %% Creating the data file
-save('data_closeloop_Velstep_40hr')
+% save('data_closeloop_Velstep_40hr')
 % load data_q1step3000_MVQcool_12hr

@@ -2,7 +2,7 @@ clc
 clear
 close all
 
-load data_closeloop_qlye1step_6hr2dot6MW
+load data_closeloop_Velstep_3hr
 
 figure()
 %plots for MVs qlye2 and qlye3 
@@ -36,12 +36,9 @@ plot(Temp(:,1))
 xlabel('Time, s')
 ylabel('T_1, [ ^0C]')
 subplot(3,2,4)
-for i=1:length(Temp)
-    TkGrad(i) = max(Temp(i,:))-Telin(i);
-end
-plot(TkGrad)
+plot(I_den(:,1))
 xlabel('Time, s')
-ylabel('T_k-T_{El_{in}} const')
+ylabel('I_{den,1}, mA/cm^2')
 subplot(3,2,6)
 plot(I_den(:,3))
 xlabel('Time, s')
@@ -55,9 +52,12 @@ xlabel('Time, s')
 ylabel('Voltage')
 %CVs
 subplot(2,2,2)
-plot(I_den(:,1))
+for i=1:length(Temp)
+    TkGrad(i) = max(Temp(i,:))-Telin(i);
+end
+plot(TkGrad)
 xlabel('Time, s')
-ylabel('I_{den,1}, mA/cm^2')
+ylabel('T_k-T_{El_{in}} const')
 subplot(2,2,4)
 plot(P_net./1e6)
 xlabel('Time, s')
