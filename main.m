@@ -10,10 +10,8 @@ import casadi.*
 N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
-
-
 %% Inputs for the simulation
-num_hr = 1;                           %no. of hours
+num_hr = .5;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -22,7 +20,7 @@ len = length(tsamp);                    %number of simulation time steps
 tstep = 200;
 
 %Disturbance is total power
-Psupp = [5e6 4e6];
+Psupp = [5.8e6];
 
 %% Initialize plotting variables
 Temp = zeros(len*length(Psupp),N);                  %temp of the electrolyzer, [C]
@@ -50,71 +48,35 @@ Qgen = zeros(len*length(Psupp),1);                    %heat generated in the ele
 Qlosslye = zeros(len*length(Psupp),1);                %heat taken out by the lye from the electrolyzer, [watts]
 P_net = zeros(len*length(Psupp),1);                   %net power to the electrolyzer assembly, [watts]
 
-V_El = zeros(len*length(Psupp),N);                  %voltage across the electrolyzer, [Watt], len is the length of time vector
+%MVs for the control of the process
+V_El = zeros(len*length(Psupp),1);                  %voltage across the electrolyzer, [Watt], len is the length of time vector
 qlye = zeros(len*length(Psupp),N);                  %lye flowrate, [g/s]
 q_cw = zeros(len*length(Psupp),1);                  %cooling water flowrate
-
+%%
 for distInt = 1:length(Psupp)
 Pnet = Psupp(distInt);%total input power
 
 %% Initial guess for steady state solution using IPOPT
 
-%algebriac state variables('z')
-u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
-P_k0 = Pnet/par.N*ones(1,par.N);        %intial guess is power divided equally among electrolyzers
-i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current
-Feff_k0 = 0.97*ones(1,par.N);
-nH2_k0 = 6*ones(1,par.N);               %[mol/s]
-qH2Oloss_k0 = nH2_k0*par.Const.Mwt.*ones(1,par.N);%[g/s]
-nH2El_net0 = sum(nH2_k0);               %[mol/s]
-nH2out_net0 = sum(nH2_k0);
-nO2El_net0 = 0.5*nH2El_net0;
-nO2out_net0 = 0.5*nH2out_net0;
-T_El_out0 = 80;                         %initial guess for the temperature of lye entering in the heat exchanger
+[z_guess,x_guess,u_guess] = init0(par.N,Pnet);
 
-%differential state variables('x')
-T_k0 = 75*ones(1,par.N);
-Psto_H20 = 25;        %initial H2 storage pressure (calculated from steady state solution) [bar]
-Psto_O20 = 25;        %initial O2 storage pressure (calculated from steady state solution) [bar]
-Mass_Bt0 = 6000000;  %mass of the liquid in the buffer tank,[g] 6000kg
-T_bt_out0 = 70;       %Initial guess for the temperature of lye mixture at the exit of the buffer tank,[degC]
-T_El_in0 = 65;        %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
-T_cw_out0 = 20;       %initial guess for the exit temperature of the cooling water leaving heat exchanger,[deg C]
-
-z_guess = [u_k0 i_k0 P_k0 Feff_k0 nH2_k0 qH2Oloss_k0 nH2El_net0 nH2out_net0 nO2El_net0 nO2out_net0 T_El_out0];
-x_guess = [T_k0 Psto_H20 Psto_O20 Mass_Bt0 T_bt_out0 T_El_in0 T_cw_out0];
-
-%initial guess for input variables('u')
-U_El_k_0 = 414.0301*ones(1,par.N);      %voltage across electrolyzers, [Volts]
-q_lye_k_0 = 6648*ones(1,par.N);         %lye flowrate, [g/s]
-q_cw_0 = 2.0698e4;                      %cooling water flow rate, [g/s]
-zH2_0 = 0.4;
-zO2_0 = 0.4;
-q_H2O_0 = 324.2657;                     %total water lost during electrolysis, [grams/sec]
-
-u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0];
-
-counter = 1;
-flag = {};
-
-X_guess = [z_guess x_guess u_guess];
 
 %% Solve the steady state problem
-[z0, x0, u0, EXIT] = El_SteadyStateOptimization(N,X_guess,Pnet);
+X_guess = [z_guess x_guess u_guess];
 
-z_guess = z0;
-x_guess = x0;
-u_guess = u0;
+z0 = z_guess;
+x0 = x_guess;
+u0 = u_guess;
 
 %Initial value of the MVs
-Vss = u0(1:par.N);
-q_lyek = u0(par.N+1:2*par.N);
+Vss = u0(1);%electrolyzer voltage
+q_lyek = u0(2:par.N+1);
 qlye_kgs = q_lyek/1000;
-qf_cw = u0(2*par.N+1);
+qf_cw = u0(par.N+2);
 qcw_kgs = qf_cw/1000;
-zH2 = u0(2*par.N+2);
-zO2 = u0(2*par.N+3);
-Qwater = u0(2*par.N+4);
+zH2 = u0(par.N+3);
+zO2 = u0(par.N+4);
+Qwater = u0(par.N+5);
 
 nH2 = sum(z0(4*par.N+1:5*par.N));
 Tk = x0(1:par.N);
@@ -123,12 +85,13 @@ T_cw_out = x0(par.N+6);
 T_bt_out = x0(par.N+4);
 
 Pcons = sum(z0(2*par.N+1:3*par.N));
+
 Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
-for nEl = 1:par.N
-    Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
-    Qlossk(nEl) = par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(Tk(nEl)-par.EL(nEl).Ta) + par.sigma*par.em*((Tk(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4))/1000;
-end
+% for nEl = 1:par.N
+%     Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
+%     Qlossk(nEl) = par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(Tk(nEl)-par.EL(nEl).Ta) + par.sigma*par.em*((Tk(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4))/1000;
+% end
 
 
 %% Manipulated variables/Parameters for the dynamic simulation
@@ -138,13 +101,7 @@ end
 for i=1+len*(distInt-1):len*distInt
 
 for j = 1:N
-    V_El(i,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
-%         V_El(tstep+500:end,j)=Vss(j)*1.02;
-end
-
-
-for j = 1:N
-    qlye(i,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
+    qlye(i,j) = q_lyek(j)*1;       %assumed same lye flowrate to all the electrolyzers
 end
 % qlye(tstep+500:end,1) = q_lyek(1)*1.2;
 
@@ -154,10 +111,19 @@ end
 
 
 %% Build the plant model- with PI controller
+
+%PI controller for states with zero SS effect
 MV_0 = [zH2 zO2 Qwater];
-Kc = 1.*[-20 -20 0.021];
-tauI = 1.*[200 200 200];
-[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(par.N,MV_0,Kc,tauI);
+tauC = 50;
+K = [-1e-3, -1e-3, 0.975];
+Kc = 1./(K*tauC);
+tauI = 1*4*tauC*ones(1,3);
+
+%proportional controller for total power
+PC.u0 = Vss;
+PC.Kc = 8.5/622000;
+
+[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(par.N,MV_0,Kc,tauI,PC);
 x0 = [x0,0,0,0];%input vector for the differential states including the eint terms
 
 %define the setpoint trajectory
@@ -171,27 +137,20 @@ Mass_Btset = x0(par.N+3)*ones(len*length(Psupp),1); %setpoint for the mass in th
 % Mass_Btset = 3000*ones(len*length(Psupp),1);
 % Mass_Btset(tstep:end) = 3500000;
 
+Pnet_set = Pnet;%setpoint for the power
 
-%% Integrate plant over the time horizon
+%% Simulate the plant
 
 for i=1+len*(distInt-1):len*distInt
     %i = timestamp
     %j = electrolyzer sequence
     
-    r =  F('x0',x0,'z0',z0,'p',[V_El(i,:), qlye(i,:), q_cw(i), pstoH2set(i), pstoO2set(i), Mass_Btset(i)]);
+    r =  F('x0',x0,'z0',z0,'p',[Pnet_set, qlye(i,:), q_cw(i), pstoH2set(i), pstoO2set(i), Mass_Btset(i)]);
     x0 = full(r.xf);            %updating solution as new initial conditions
     z0 = full(r.zf);
     
     
     %% Storing values in plotting variables
-    
-%     %calculation of compressor power
-%     PcompH2(i) = full(((r.zf(6*N+1)*par.Comp.k*par.Const.R*par.Comp.Tel)/...
-%         (par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+1)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
-%     PcompO2(i) = full(((r.zf(6*N+3)*par.Comp.k*par.Const.R*par.Comp.Tel)/...
-%         (par.Comp.alpha*(par.Comp.k-1)))*(((r.xf(N+2)/par.Comp.Pel)^((par.Comp.k-1)/par.Comp.k))-1));
-%     %assuming same k and Tel for O2
-    
     
     nH2in(i) = full(r.zf(6*N+1));     %net hydrogen flow rate in to the storage at all timestamps, [mol/s]
     nH2out(i) = full(r.zf(6*N+2));    %net hydrogen flowrate out from the storage at all timestamps, [mol/s]
@@ -255,8 +214,11 @@ for i=1+len*(distInt-1):len*distInt
     taui_MassBtPI = tauI(3);
     e_Mbt = mBufferT(i) - Mass_Btset(i);
     q_H2O(i) = PIcontroller(Qwater,Kc_MassBtPI,taui_MassBtPI,e_Mbt,eint_Mbt(i));
-    
+    %%
     P_net(i)=sum(P(i,:)); 
+    
+    %controller for MV-CV pairing Vel-Pnet
+    V_El(i) = PC.u0 - PC.Kc*(P_net(i)-Pnet_set);
     
     if rem(i,1000)==0
         disp(i)
@@ -289,7 +251,7 @@ plot(qlye)
 xlabel('Time, s')
 ylabel('Lye flowrate, g/s')
 subplot(6,2,3)
-plot(V_El)
+plot(U)
 xlabel('Time, s')
 ylabel('Cell voltage')
 subplot(6,2,5)
