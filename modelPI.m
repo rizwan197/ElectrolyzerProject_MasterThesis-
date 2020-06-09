@@ -1,4 +1,4 @@
-function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI,PC)
+function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI,PC,T2C,T3C)
 %This function file contains the mathematical model for the system of
 %electrolyzers + PI controller
 %This plant model includes extra states for the integrated error of the CVs 
@@ -48,9 +48,9 @@ par = parElectrolyzer(N);
 import casadi.*
 
 %% Define symbolic variables
-x = SX.sym('x',7*par.N+14);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
+x = SX.sym('x',7*par.N+16);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
 eqnAlg = SX.zeros(6*par.N+5,1);
-eqnDiff = SX.zeros(par.N+9,1);
+eqnDiff = SX.zeros(par.N+11,1);
 
 %variables for algebriac eqns.
 u_k=[];
@@ -90,9 +90,10 @@ inp = SX.sym('inp',par.N+5);
 q_lye_k=[];
 
 Pnetset = inp(1);
-for nEl = 1:par.N
-    q_lye_k = [q_lye_k inp(1+nEl)];
-end
+q_lye_k(1) = inp(2);
+T2set = inp(3);
+T3set = inp(4);
+
 q_cw = inp(par.N+2);
 pstoH2set = inp(par.N+3);
 pstoO2set = inp(par.N+4);
@@ -134,6 +135,15 @@ end
 PC.e = Pcons-Pnetset;
 U_El_k =  PC.u0 - (PC.Kc)*PC.e;
 
+%PI controller for the temperature of the electrolyzer 2
+eint_T2 = x(7*par.N+15);     %eint T2
+eT2 = T_k(2) - T2set;        %error
+q_lye_k(2) = min(10,max(0.5,PIcontroller(T2C.u0,T2C.Kc,T2C.tauI,eT2,eint_T2)));%0.5<=q_lye_k<=10;
+
+%PI controller for the temperature of the electrolyzer 3
+eint_T3 = x(7*par.N+16);     %eint T3
+eT3 = T_k(3) - T3set;        %error
+q_lye_k(3) = min(10,max(0.5,PIcontroller(T3C.u0,T3C.Kc,T3C.tauI,eT3,eint_T3)));%0.5<=q_lye_k<=10;
 
 %% Model equations
 for nEl = 1:par.N
@@ -208,6 +218,8 @@ eqnDiff(par.N+6) = ((q_cw*(par.Tw_in-T_cw_out))/(1000*par.Const.rho*par.Const.Vc
 eqnDiff(par.N+7) = e_pstoH2; %differential equation d(eint_pstoH2)/dt = e_pstoH2
 eqnDiff(par.N+8) = e_pstoO2; %differential equation d(eint_pstoO2)/dt = e_pstoO2
 eqnDiff(par.N+9) = eMass_Bt; %differential equation d(eintMass_Bt)/dt = eMass_Bt
+eqnDiff(par.N+10) = eint_T2;
+eqnDiff(par.N+11) = eint_T3;
 
 xDiff = x(6*par.N+6:end,1);
 xAlg = x(1:6*par.N+5,1);

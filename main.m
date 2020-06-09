@@ -97,12 +97,12 @@ V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 %% Manipulated variables/Parameters for the dynamic simulation
 %these are the degree of freedoms that we will utilise to control the system
 
-
 for i=1+len*(distInt-1):len*distInt
+% qlye(i,1) = q_lyek(1);
 
-for j = 1:N
-    qlye(i,j) = q_lyek(j)*1;       %assumed same lye flowrate to all the electrolyzers
-end
+% for j = 1:N
+%     qlye(i,j) = q_lyek(j)*1;       %assumed same lye flowrate to all the electrolyzers
+% end
 % qlye(tstep+500:end,1) = q_lyek(1)*1.2;
 
 q_cw(i) = qf_cw;                     %cooling water flow rate as a manipulated variable, [g/s]
@@ -123,8 +123,30 @@ tauI = 1*4*tauC*ones(1,3);
 PC.u0 = Vss;
 PC.Kc = 8.5/622000;
 
-[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(par.N,MV_0,Kc,tauI,PC);
-x0 = [x0,0,0,0];%input vector for the differential states including the eint terms
+%PI controller for T1 T2 and T3
+T1C.u0 = q_lyek(1);
+T1C.K = ;
+T1C.tau1 = ;
+T1C.tauC = 500;
+T1C.Kc = T1C.tau1/(T1C.K*T1C.tauC);
+T1C.tauI = min(4*T1C.tauC,T1C.tau1);
+
+T2C.u0 = q_lyek(2);
+T2C.K = -9.712e-3;
+T2C.tau1 = 8500;
+T2C.tauC = 500;
+T2C.Kc = T2C.tau1/(T2C.K*T2C.tauC);
+T2C.tauI = min(4*T2C.tauC,T2C.tau1);
+
+T3C.u0 = q_lyek(3);
+T3C.K = -0.01166;
+T3C.tau1 = 9600;
+T3C.tauC = 500;
+T3C.Kc = T3C.tau1/(T3C.K*T3C.tauC);
+T3C.tauI = min(4*T3C.tauC,T3C.tau1);
+
+[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(par.N,MV_0,Kc,tauI,PC,T2C,T3C);
+x0 = [x0,0,0,0,0,0];%input vector for the differential states including the eint terms
 
 %define the setpoint trajectory
 pstoH2set = x0(par.N+1)*ones(len*length(Psupp),1);
@@ -138,6 +160,8 @@ Mass_Btset = x0(par.N+3)*ones(len*length(Psupp),1); %setpoint for the mass in th
 % Mass_Btset(tstep:end) = 3500000;
 
 Pnet_set = Pnet;%setpoint for the power
+T2set = 80;
+T3set = 80;
 
 %% Simulate the plant
 
@@ -145,7 +169,7 @@ for i=1+len*(distInt-1):len*distInt
     %i = timestamp
     %j = electrolyzer sequence
     
-    r =  F('x0',x0,'z0',z0,'p',[Pnet_set, qlye(i,:), q_cw(i), pstoH2set(i), pstoO2set(i), Mass_Btset(i)]);
+    r =  F('x0',x0,'z0',z0,'p',[Pnet_set, qlye(i,1), T2set, T3set, q_cw(i), pstoH2set(i), pstoO2set(i), Mass_Btset(i)]);
     x0 = full(r.xf);            %updating solution as new initial conditions
     z0 = full(r.zf);
     
@@ -167,6 +191,8 @@ for i=1+len*(distInt-1):len*distInt
     eint_pstoH2(i) = full(r.xf(N+7));   %integrated error term for pstoH2
     eint_pstoO2(i) = full(r.xf(N+8));   %integrated error term for pstoO2
     eint_Mbt(i) = full(r.xf(N+9));      %integrated error term for the mass of the buffer tank
+    eint_T2(i) = full(r.xf(N+10));
+    eint_T3(i) = full(r.xf(N+11));
     
     for j=1:N
         U(i,j) = full(r.zf(j));             %voltage/cell, [V]
@@ -178,17 +204,17 @@ for i=1+len*(distInt-1):len*distInt
         
         I_den(i,j) = 0.1*I(i,j)/par.EL(j).A;    %current density, [mA/cm^2]
         
-        Qloss(i,j) = par.TherMo(j).A_El*(par.TherMo(j).hc*(Temp(i,j)-par.EL(j).Ta) + ...
-            par.sigma*par.em*((Temp(i,j)+273.15)^4-(par.EL(j).Ta+273.15)^4));
-        %heat loss to surrounding in the electrolyzer, [watts]
+%         Qloss(i,j) = par.TherMo(j).A_El*(par.TherMo(j).hc*(Temp(i,j)-par.EL(j).Ta) + ...
+%             par.sigma*par.em*((Temp(i,j)+273.15)^4-(par.EL(j).Ta+273.15)^4));
+%         %heat loss to surrounding in the electrolyzer, [watts]
+%         
+%         Qgen(i,j) = par.EL(j).nc*(U(i,j)-par.EL(j).Utn)*I(i,j);
+%         %heat generated in the electrolyzer, [watts]
+%         
+%         Qlosslye(i,j) = qlye(i,j)*par.Const.CpLye*(Telin(i)-Temp(i,j));
+%         %heat taken out by the lye from the electrolyzer, [watts]
         
-        Qgen(i,j) = par.EL(j).nc*(U(i,j)-par.EL(j).Utn)*I(i,j);
-        %heat generated in the electrolyzer, [watts]
-        
-        Qlosslye(i,j) = qlye(i,j)*par.Const.CpLye*(Telin(i)-Temp(i,j));
-        %heat taken out by the lye from the electrolyzer, [watts]
-        
-        Qnet(i,j) = Qgen(i,j)+Qlosslye(i,j)-Qloss(i,j);
+%         Qnet(i,j) = Qgen(i,j)+Qlosslye(i,j)-Qloss(i,j);
         
         V_H2(i,j) = nH2elout(i,j)*0.0224136*3600;%hydrogen production rate from individual electrolyzer, [Nm3/h]
         Ps(i,j) = P(i,j)/(1000*V_H2(i,j));%Specific electricity consumption, [kWh/Nm3]
@@ -214,7 +240,8 @@ for i=1+len*(distInt-1):len*distInt
     taui_MassBtPI = tauI(3);
     e_Mbt = mBufferT(i) - Mass_Btset(i);
     q_H2O(i) = PIcontroller(Qwater,Kc_MassBtPI,taui_MassBtPI,e_Mbt,eint_Mbt(i));
-    %%
+    
+    %% Controller for the states of the process
     P_net(i)=sum(P(i,:)); 
     
     %controller for MV-CV pairing Vel-Pnet
@@ -223,6 +250,14 @@ for i=1+len*(distInt-1):len*distInt
     if rem(i,1000)==0
         disp(i)
     end
+    
+    %controller for MV-CV pairing qlye2-T2
+    e_T2 = Temp(i,2) - T2set;
+    qlye(i,2) = PIcontroller(T2C.u0,T2C.Kc,T2C.tauI,e_T2,eint_T2(i));
+    
+    %controller for MV-CV pairing qlye3-T3
+    e_T3 = Temp(i,3) - T3set;
+    qlye(i,3) = PIcontroller(T3C.u0,T3C.Kc,T3C.tauI,e_T3,eint_T3(i));
     
 end
 
