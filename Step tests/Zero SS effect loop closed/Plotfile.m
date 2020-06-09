@@ -2,7 +2,8 @@ clc
 clear
 close all
 
-load data_closeloop_qlye1step_6hr2dot6MW
+load data_closeloop_qlye1step_40hr5MW
+
 
 figure()
 %plots for MVs qlye2 and qlye3 
@@ -124,3 +125,12 @@ xlabel('Time, s')
 % xlabel('Time, s')
 % ylabel('T_{el,3}')
 
+figure()
+subplot(1,2,1)
+plot(qlye(:,1))
+xlabel('Time, s')
+ylabel('Lye flowrate El 1, g/s')
+subplot(1,2,2)
+plot(Temp(:,1))
+xlabel('Time, s')
+ylabel('T_1, [ ^0C]')

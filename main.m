@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 5;                           %no. of hours
+num_hr = 40;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -22,7 +22,7 @@ tstep = 200;
 %% Initial guess for steady state solution using IPOPT
 
 %disturbance is total power
-Pnet = 5.84e6;%1900e3*par.N; %6.3MW total input power
+Pnet = 5e6;%1900e3*par.N; %6.3MW total input power
 
 %algebriac state variables('z')
 u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
@@ -102,14 +102,14 @@ end
 V_El = zeros(len,N);              %voltage across the electrolyzer, [Watt], len is the length of time vector
 for j = 1:N
     V_El(1:end,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
-        V_El(tstep+500:end,j)=Vss(j)*1.02;
+%         V_El(tstep+500:end,j)=Vss(j)*1.02;
 end
 
 qlye = zeros(len,N);                   %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
-% qlye(tstep+500:end,1) = q_lyek(1)*1.2;
+qlye(tstep+500:end,1) = q_lyek(1)*1.2;
 
 q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
 % q_cw(tstep+500:end) = qf_cw*1.2;                  %incremental step change in cooling water flowrate
@@ -366,5 +366,5 @@ xlabel('Time, s')
 ylabel('P_{net},MW')
 
 %% Creating the data file
-save('data_closeloop_Velstep_40hr')
+% save('data_closeloop_qlye1step_40hr5MW')
 % load data_q1step3000_MVQcool_12hr
