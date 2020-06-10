@@ -1,4 +1,4 @@
-function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI,PC,T2C,T3C)
+function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI,PC,T1C,T2C,T3C)
 %This function file contains the mathematical model for the system of
 %electrolyzers + PI controller
 %This plant model includes extra states for the integrated error of the CVs 
@@ -48,9 +48,9 @@ par = parElectrolyzer(N);
 import casadi.*
 
 %% Define symbolic variables
-x = SX.sym('x',7*par.N+16);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
+x = SX.sym('x',7*par.N+17);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
 eqnAlg = SX.zeros(6*par.N+5,1);
-eqnDiff = SX.zeros(par.N+11,1);
+eqnDiff = SX.zeros(par.N+12,1);
 
 %variables for algebriac eqns.
 u_k=[];
@@ -90,7 +90,7 @@ inp = SX.sym('inp',par.N+5);
 q_lye_k=[];
 
 Pnetset = inp(1);
-q_lye_k(1) = inp(2);
+T1set = inp(2);
 T2set = inp(3);
 T3set = inp(4);
 
@@ -135,15 +135,22 @@ end
 PC.e = Pcons-Pnetset;
 U_El_k =  PC.u0 - (PC.Kc)*PC.e;
 
+%PI controller for the temperature of the electrolyzer 1
+eint_T1 = x(7*par.N+15);     %eint T1
+eT1 = T_k(1) - T1set;        %error
+q_lye1 = min(10,max(0.5,PIcontroller(T1C.u0,T1C.Kc,T1C.tauI,eT1,eint_T1)));%0.5<=q_lye_k<=10;
+
 %PI controller for the temperature of the electrolyzer 2
-eint_T2 = x(7*par.N+15);     %eint T2
+eint_T2 = x(7*par.N+16);     %eint T2
 eT2 = T_k(2) - T2set;        %error
-q_lye_k(2) = min(10,max(0.5,PIcontroller(T2C.u0,T2C.Kc,T2C.tauI,eT2,eint_T2)));%0.5<=q_lye_k<=10;
+q_lye2 = min(10,max(0.5,PIcontroller(T2C.u0,T2C.Kc,T2C.tauI,eT2,eint_T2)));%0.5<=q_lye_k<=10;
 
 %PI controller for the temperature of the electrolyzer 3
-eint_T3 = x(7*par.N+16);     %eint T3
+eint_T3 = x(7*par.N+17);     %eint T3
 eT3 = T_k(3) - T3set;        %error
-q_lye_k(3) = min(10,max(0.5,PIcontroller(T3C.u0,T3C.Kc,T3C.tauI,eT3,eint_T3)));%0.5<=q_lye_k<=10;
+q_lye3 = min(10,max(0.5,PIcontroller(T3C.u0,T3C.Kc,T3C.tauI,eT3,eint_T3)));%0.5<=q_lye_k<=10;
+
+q_lye_k = [q_lye1 q_lye2 q_lye3];
 
 %% Model equations
 for nEl = 1:par.N
@@ -218,8 +225,9 @@ eqnDiff(par.N+6) = ((q_cw*(par.Tw_in-T_cw_out))/(1000*par.Const.rho*par.Const.Vc
 eqnDiff(par.N+7) = e_pstoH2; %differential equation d(eint_pstoH2)/dt = e_pstoH2
 eqnDiff(par.N+8) = e_pstoO2; %differential equation d(eint_pstoO2)/dt = e_pstoO2
 eqnDiff(par.N+9) = eMass_Bt; %differential equation d(eintMass_Bt)/dt = eMass_Bt
-eqnDiff(par.N+10) = eint_T2;
-eqnDiff(par.N+11) = eint_T3;
+eqnDiff(par.N+10) = eint_T1;
+eqnDiff(par.N+11) = eint_T2;
+eqnDiff(par.N+12) = eint_T3;
 
 xDiff = x(6*par.N+6:end,1);
 xAlg = x(1:6*par.N+5,1);

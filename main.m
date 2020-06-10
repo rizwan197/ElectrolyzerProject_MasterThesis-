@@ -20,7 +20,7 @@ len = length(tsamp);                    %number of simulation time steps
 tstep = 200;
 
 %Disturbance is total power
-Psupp = [5.8e6];
+Psupp = [5e6];
 
 %% Initialize plotting variables
 Temp = zeros(len*length(Psupp),N);                  %temp of the electrolyzer, [C]
@@ -98,13 +98,6 @@ V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 %these are the degree of freedoms that we will utilise to control the system
 
 for i=1+len*(distInt-1):len*distInt
-% qlye(i,1) = q_lyek(1);
-
-% for j = 1:N
-%     qlye(i,j) = q_lyek(j)*1;       %assumed same lye flowrate to all the electrolyzers
-% end
-% qlye(tstep+500:end,1) = q_lyek(1)*1.2;
-
 q_cw(i) = qf_cw;                     %cooling water flow rate as a manipulated variable, [g/s]
 % q_cw(tstep+500:end) = qf_cw*1.2;                  %incremental step change in cooling water flowrate
 end
@@ -125,8 +118,8 @@ PC.Kc = 8.5/622000;
 
 %PI controller for T1 T2 and T3
 T1C.u0 = q_lyek(1);
-T1C.K = ;
-T1C.tau1 = ;
+T1C.K = -1.358e-3;
+T1C.tau1 = 3600;
 T1C.tauC = 500;
 T1C.Kc = T1C.tau1/(T1C.K*T1C.tauC);
 T1C.tauI = min(4*T1C.tauC,T1C.tau1);
@@ -145,8 +138,8 @@ T3C.tauC = 500;
 T3C.Kc = T3C.tau1/(T3C.K*T3C.tauC);
 T3C.tauI = min(4*T3C.tauC,T3C.tau1);
 
-[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(par.N,MV_0,Kc,tauI,PC,T2C,T3C);
-x0 = [x0,0,0,0,0,0];%input vector for the differential states including the eint terms
+[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(par.N,MV_0,Kc,tauI,PC,T1C,T2C,T3C);
+x0 = [x0,0,0,0,0,0,0];%input vector for the differential states including the eint terms
 
 %define the setpoint trajectory
 pstoH2set = x0(par.N+1)*ones(len*length(Psupp),1);
@@ -160,6 +153,7 @@ Mass_Btset = x0(par.N+3)*ones(len*length(Psupp),1); %setpoint for the mass in th
 % Mass_Btset(tstep:end) = 3500000;
 
 Pnet_set = Pnet;%setpoint for the power
+T1set = 80;
 T2set = 80;
 T3set = 80;
 
@@ -169,7 +163,7 @@ for i=1+len*(distInt-1):len*distInt
     %i = timestamp
     %j = electrolyzer sequence
     
-    r =  F('x0',x0,'z0',z0,'p',[Pnet_set, qlye(i,1), T2set, T3set, q_cw(i), pstoH2set(i), pstoO2set(i), Mass_Btset(i)]);
+    r =  F('x0',x0,'z0',z0,'p',[Pnet_set, T1set, T2set, T3set, q_cw(i), pstoH2set(i), pstoO2set(i), Mass_Btset(i)]);
     x0 = full(r.xf);            %updating solution as new initial conditions
     z0 = full(r.zf);
     
@@ -191,8 +185,9 @@ for i=1+len*(distInt-1):len*distInt
     eint_pstoH2(i) = full(r.xf(N+7));   %integrated error term for pstoH2
     eint_pstoO2(i) = full(r.xf(N+8));   %integrated error term for pstoO2
     eint_Mbt(i) = full(r.xf(N+9));      %integrated error term for the mass of the buffer tank
-    eint_T2(i) = full(r.xf(N+10));
-    eint_T3(i) = full(r.xf(N+11));
+    eint_T1(i) = full(r.xf(N+10));
+    eint_T2(i) = full(r.xf(N+11));
+    eint_T3(i) = full(r.xf(N+12));
     
     for j=1:N
         U(i,j) = full(r.zf(j));             %voltage/cell, [V]
@@ -245,11 +240,15 @@ for i=1+len*(distInt-1):len*distInt
     P_net(i)=sum(P(i,:)); 
     
     %controller for MV-CV pairing Vel-Pnet
-    V_El(i) = PC.u0 - PC.Kc*(P_net(i)-Pnet_set);
+    V_El(i+1) = V_El(i) - PC.Kc*(P_net(i)-Pnet_set);
     
     if rem(i,1000)==0
         disp(i)
     end
+    
+    %controller for MV-CV pairing qlye1-T1
+    e_T1 = Temp(i,1) - T1set;
+    qlye(i,1) = PIcontroller(T1C.u0,T1C.Kc,T1C.tauI,e_T1,eint_T1(i));
     
     %controller for MV-CV pairing qlye2-T2
     e_T2 = Temp(i,2) - T2set;

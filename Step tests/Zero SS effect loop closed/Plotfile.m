@@ -2,7 +2,8 @@ clc
 clear
 close all
 
-load data_closeloop_Velstep_3hr
+load data_closeloop_qlye1step_40hr5MW.mat
+
 
 figure()
 %plots for MVs qlye2 and qlye3 
