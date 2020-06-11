@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 6;                           %no. of hours
+num_hr = 3;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -119,7 +119,7 @@ Mass_Btset = x0(par.N+3)*ones(len,1); %setpoint for the mass in the buffer tank
 %% PI controller for rest of the states
 %for pairing qlye1-T1 
 T1C.u0 = q_lyek(1);
-T1C.tauC = 300;
+T1C.tauC = 100;
 T1C.k = -1.358e-3;
 T1C.tau1 = 3600;
 T1C.Kc = (1/T1C.k)*(T1C.tau1/T1C.tauC);
@@ -130,7 +130,7 @@ T1C.err0 = 0;
 
 %for pairing qlye2-T2
 T2C.u0 = q_lyek(2);
-T2C.tauC = 300;
+T2C.tauC = 100;
 T2C.k = -9.712e-3;
 T2C.tau1 = 8500;
 T2C.Kc = (1/T2C.k)*(T2C.tau1/T2C.tauC);
@@ -141,7 +141,7 @@ T2C.err0 = 0;
 
 %for pairing qlye3-T3
 T3C.u0 = q_lyek(3);
-T3C.tauC = 300;
+T3C.tauC = 100;
 T3C.k = -0.01166;
 T3C.tau1 = 9600;
 T3C.Kc = (1/T3C.k)*(T3C.tau1/T3C.tauC);
@@ -207,12 +207,12 @@ for i=1:len
     eint_Mbt(i) = full(r.xf(N+9));      %integrated error term for the mass of the buffer tank
     
     for j=1:N
-        U(i,j) = full(r.zf(j));             %voltage/cell, [V]
-        I(i,j) = full(r.zf(N+j));             %current, [A]
+        U(i,j) = full(r.zf(j));                 %voltage/cell, [V]
+        I(i,j) = full(r.zf(N+j));               %current, [A]
         P(i,j) = full(r.zf(2*N+j));             %power, [Watts]
         nH2elout(i,j) = full(r.zf(4*N+j));      %hydrogen production rate from individual electrolyzer, [mol/s]
         
-        Temp(i,j)= full(r.xf(j));             %temperature of electrolyzers at all timestamps, [celsius]
+        Temp(i,j)= full(r.xf(j));               %temperature of electrolyzers at all timestamps, [celsius]
         
         I_den(i,j) = 0.1*I(i,j)/par.EL(j).A;    %current density, [mA/cm^2]
         
@@ -228,8 +228,8 @@ for i=1:len
         
         Qnet(i,j) = Qgen(i,j)+Qlosslye(i,j)-Qloss(i,j);
         
-        V_H2(i,j) = nH2elout(i,j)*0.0224136*3600;%hydrogen production rate from individual electrolyzer, [Nm3/h]
-        Ps(i,j) = P(i,j)/(1000*V_H2(i,j));%Specific electricity consumption, [kWh/Nm3]
+        V_H2(i,j) = nH2elout(i,j)*0.0224136*3600;   %hydrogen production rate from individual electrolyzer, [Nm3/h]
+        Ps(i,j) = P(i,j)/(1000*V_H2(i,j));          %Specific electricity consumption, [kWh/Nm3]
     end
     
     %% Calculate the input trajectory with PI controller
