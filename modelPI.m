@@ -1,8 +1,10 @@
-function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI,PC,T1C,T2C,T3C)
+function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI)
 %This function file contains the mathematical model for the system of
 %electrolyzers + PI controller
 %This plant model includes extra states for the integrated error of the CVs 
+
 %nEl = sequence of the electrolyzer
+
 %Electrolyzer model is a system of following ODE and nonlinear algebraic eqns
 %Nonlinear algebraic equation are:
 %1N)UI*nc-Power = 0;
@@ -16,6 +18,7 @@ function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI,PC,T1C,T
 %6N+3)nO2_el_net - nH2elnet/2 = 0;
 %6N+4)nO2_out_net - kvlvO2*VdispO2*sqrt(PstoO2-PoutO2) = 0;
 %6N+5)T_el_out - ((sum(qlye*T)*CpLye - sum(qloss*T)*Cp + sum(qloss)*(Cp-CpLye)*Tref)/((sum(qlye)-sum(qloss))*Cp) = 0;
+
 %ODE eqautions are:
 %1N)dT/dt = (q_lye_k(nEl)*CpLye*(T_El_in-T_k(nEl)) + nc*(u_k(nEl)-cUtn)*i_k(nEl) - ...
 %        A_surf*(hc*(T_k(nEl)-par.EL(nEl).Ta) + ...
@@ -31,6 +34,7 @@ function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI,PC,T1C,T
 %                - (UA*deltaT_LMTD/(1000*rho*CpLye*Vh));
 %N+6)dT_cw_out/dt = ((q_cw*(Tw_in-T_cw_out))/(1000*rho*Vc))...
 %                 + (UA*deltaT_LMTD/(1000*rho*Cp*Vc));
+
 %Inputs for the model are:
 %1N)V_el, voltage across each electrolyzer
 %2N)qlye_k, lye flowrate through each electrolyzer
@@ -38,6 +42,7 @@ function[xDiff, xAlg, input, eqnAlg, eqnDiff, F] = modelPI(N,u0,Kc,tauI,PC,T1C,T
 %4)zH2,outlet valve opening of hydrogen storage tank 
 %5)zO2, outlet valve opening of the oxygen storage tank
 %6)qH2O, flow rate of water added to buffer tank
+
 %parameters for the model are in parElectrolyzer.m file
 
 
@@ -48,9 +53,9 @@ par = parElectrolyzer(N);
 import casadi.*
 
 %% Define symbolic variables
-x = SX.sym('x',7*par.N+17);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
+x = SX.sym('x',7*par.N+14);              %symbolic variables for cell voltage, current and electrolyzer voltage (V)
 eqnAlg = SX.zeros(6*par.N+5,1);
-eqnDiff = SX.zeros(par.N+12,1);
+eqnDiff = SX.zeros(par.N+9,1);
 
 %variables for algebriac eqns.
 u_k=[];
@@ -86,71 +91,46 @@ end
 
 %% Define inputs for the simulation (MVs for the dynamic simulation)
 
-inp = SX.sym('inp',par.N+5);
+inp = SX.sym('inp',2*par.N+4);
+
+U_El_k=[];
 q_lye_k=[];
+for nEl = 1:par.N
+    U_El_k = [U_El_k inp(nEl)];
+    q_lye_k = [q_lye_k inp(par.N+nEl)];
+end
 
-Pnetset = inp(1);
-T1set = inp(2);
-T2set = inp(3);
-T3set = inp(4);
+q_cw = inp(2*par.N+1);
+pstoH2set = inp(2*par.N+2);
+pstoO2set = inp(2*par.N+3);
+Mass_Btset = inp(2*par.N+4);
 
-q_cw = inp(par.N+2);
-pstoH2set = inp(par.N+3);
-pstoO2set = inp(par.N+4);
-Mass_Btset = inp(par.N+5);
-
-%% PI controller for states with zero steady state effect
+%% Additional state for integrated error in PI controller
 
 %PI controller for pressure in the hydrogen storage tank
-eint_pstoH2 = x(7*par.N+12);            %eint in pstoH2
-e_pstoH2 = Psto_H2 - pstoH2set;         %error in pstoH2
-Kc_pstoH2PI = Kc(1);                    %controller gain
+eint_pstoH2 = x(7*par.N+12);          %eint in pstoH2
+e_pstoH2 = Psto_H2 - pstoH2set;      %error in pstoH2
+Kc_pstoH2PI = Kc(1);                %controller gain
 taui_pstoH2PI = tauI(1);                %integral time constant
-zH2ini = u0(1);                         %initial value of MV i.e. zH2
-zH2 = min(1,max(0,PIcontroller(zH2ini,Kc_pstoH2PI,taui_pstoH2PI,e_pstoH2,eint_pstoH2)));%0<=zO2<=1
+zH2ini = u0(1);                     %initial value of MV i.e. zH2
+zH2 = PIcontroller(zH2ini,Kc_pstoH2PI,taui_pstoH2PI,e_pstoH2,eint_pstoH2);
 
 %PI controller for pressure in the oxygen storage tank
-eint_pstoO2 = x(7*par.N+13);            %eint in mass of the buffer tank
-e_pstoO2 = Psto_O2 - pstoO2set;         %error
-Kc_pstoO2PI = Kc(2);                    %controller gain
+eint_pstoO2 = x(7*par.N+13);          %eint in mass of the buffer tank
+e_pstoO2 = Psto_O2 - pstoO2set;      %error
+Kc_pstoO2PI = Kc(2);                %controller gain
 taui_pstoO2PI = tauI(2);                %integral time constant
-zO2ini = u0(2);                         %initial value of MV i.e. zO2
-zO2 = min(1,max(0,PIcontroller(zO2ini,Kc_pstoO2PI,taui_pstoO2PI,e_pstoO2,eint_pstoO2)));%0<=zO2<=1
+zO2ini = u0(2);                     %initial value of MV i.e. zO2
+zO2 = PIcontroller(zO2ini,Kc_pstoO2PI,taui_pstoO2PI,e_pstoO2,eint_pstoO2);
 
 %PI controller for mass in the buffer tank
-eint_Mbt = x(7*par.N+14);               %eint in mass of the buffer tank
-eMass_Bt = Mass_Bt - Mass_Btset;        %error
-Kc_MassBtPI = Kc(3);                    %controller gain
+eint_Mbt = x(7*par.N+14);             %eint in mass of the buffer tank
+eMass_Bt = Mass_Bt - Mass_Btset;    %error
+Kc_MassBtPI = Kc(3);                %controller gain
 taui_MassBtPI = tauI(3);                %integral time constant
-q_H2Oini = u0(3);                       %initial value of MV i.e. qH2O
-q_H2O = max(0,PIcontroller(q_H2Oini,Kc_MassBtPI,taui_MassBtPI,eMass_Bt,eint_Mbt));%q_H2O>=0
+q_H2Oini = u0(3);                   %initial value of MV i.e. qH2O
+q_H2O = PIcontroller(q_H2Oini,Kc_MassBtPI,taui_MassBtPI,eMass_Bt,eint_Mbt);
 
-%% Controller for rest of the states
-
-%proportional controller for Vel-Pnet
-Pcons = SX.zeros(1,1);
-for nEl = 1:par.N
-    Pcons = Pcons+P_k(nEl);
-end
-PC.e = Pcons-Pnetset;
-U_El_k =  PC.u0 - (PC.Kc)*PC.e;
-
-%PI controller for the temperature of the electrolyzer 1
-eint_T1 = x(7*par.N+15);     %eint T1
-eT1 = T_k(1) - T1set;        %error
-q_lye1 = min(10,max(0.5,PIcontroller(T1C.u0,T1C.Kc,T1C.tauI,eT1,eint_T1)));%0.5<=q_lye_k<=10;
-
-%PI controller for the temperature of the electrolyzer 2
-eint_T2 = x(7*par.N+16);     %eint T2
-eT2 = T_k(2) - T2set;        %error
-q_lye2 = min(10,max(0.5,PIcontroller(T2C.u0,T2C.Kc,T2C.tauI,eT2,eint_T2)));%0.5<=q_lye_k<=10;
-
-%PI controller for the temperature of the electrolyzer 3
-eint_T3 = x(7*par.N+17);     %eint T3
-eT3 = T_k(3) - T3set;        %error
-q_lye3 = min(10,max(0.5,PIcontroller(T3C.u0,T3C.Kc,T3C.tauI,eT3,eint_T3)));%0.5<=q_lye_k<=10;
-
-q_lye_k = [q_lye1 q_lye2 q_lye3];
 
 %% Model equations
 for nEl = 1:par.N
@@ -166,7 +146,7 @@ for nEl = 1:par.N
         log10(((par.U(nEl).t1+par.U(nEl).t2/T_k(nEl)+...
         par.U(nEl).t3/(T_k(nEl)^2))*i_k(nEl)/par.EL(nEl).A)+1)-...
         par.EL(nEl).Urev;                                                           %U-I relationship
-    eqnAlg(2*par.N+nEl) = u_k(nEl)*par.EL(nEl).nc - U_El_k;                    %U(j).nc(j)=V
+    eqnAlg(2*par.N+nEl) = u_k(nEl)*par.EL(nEl).nc - U_El_k(nEl);                    %U(j).nc(j)=V
     eqnAlg(3*par.N+nEl) = Feff_k(nEl) - ((.1*i_k(nEl)/par.EL(nEl).A)^2)/...
         (par.U(nEl).f1+((.1*i_k(nEl)/par.EL(nEl).A)^2))*par.U(nEl).f2;              %faraday efficiency
     eqnAlg(4*par.N+nEl) = nH2_k(nEl) - Feff_k(nEl)*par.EL(nEl).nc*...
@@ -225,9 +205,6 @@ eqnDiff(par.N+6) = ((q_cw*(par.Tw_in-T_cw_out))/(1000*par.Const.rho*par.Const.Vc
 eqnDiff(par.N+7) = e_pstoH2; %differential equation d(eint_pstoH2)/dt = e_pstoH2
 eqnDiff(par.N+8) = e_pstoO2; %differential equation d(eint_pstoO2)/dt = e_pstoO2
 eqnDiff(par.N+9) = eMass_Bt; %differential equation d(eintMass_Bt)/dt = eMass_Bt
-eqnDiff(par.N+10) = eint_T1;
-eqnDiff(par.N+11) = eint_T2;
-eqnDiff(par.N+12) = eint_T3;
 
 xDiff = x(6*par.N+6:end,1);
 xAlg = x(1:6*par.N+5,1);

@@ -29,9 +29,9 @@ z_guess = [u_k0 i_k0 P_k0 Feff_k0 nH2_k0 qH2Oloss_k0 nH2El_net0 nH2out_net0 nO2E
 x_guess = [T_k0 Psto_H20 Psto_O20 Mass_Bt0 T_bt_out0 T_El_in0 T_cw_out0];
 
 %initial guess for input variables('u')
-U_El_k_0 = 414.0301;      %voltage across electrolyzers, [Volts]
+U_El_k_0 = 414.0301*ones(1,par.N);      %voltage across electrolyzers, [Volts]
 q_lye_k_0 = 6648*ones(1,par.N);         %lye flowrate, [g/s]
-q_cw_0 = 2.0698e4; %2.42e3;%                     %cooling water flow rate, [g/s]
+q_cw_0 = 2.0698e4; %2.42e3;                    %cooling water flow rate, [g/s]
 zH2_0 = 0.4;
 zO2_0 = 0.4;
 q_H2O_0 = 324.2657;                     %total water lost during electrolysis, [grams/sec]
