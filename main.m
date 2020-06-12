@@ -32,7 +32,7 @@ z0 = z_guess;
 x0 = x_guess;
 u0 = u_guess;
 
-T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer
+T_El_in = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer
 T_cw_out = x0(par.N+6);
 T_bt_out = x0(par.N+4);
 
