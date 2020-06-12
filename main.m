@@ -166,8 +166,8 @@ PC.set = P_inp;
 %for pairing qcw-SOC
 SOC.u0 = qf_cw;
 SOC.tauC = 100;
-SOC.k;
-SOC.tau1;
+SOC.k = 0.034;
+SOC.tau1=3450;
 SOC.Kc;
 SOC.tauI;
 SOC.Ki;
