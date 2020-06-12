@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 40;                           %no. of hours
+num_hr = 3;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -109,10 +109,10 @@ qlye = zeros(len,N);                   %lye flowrate, [g/s]
 for j = 1:N
     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
 end
-qlye(tstep+500:end,1) = q_lyek(1)*1.2;
+% qlye(tstep+500:end,1) = q_lyek(1)*1.2;
 
 q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
-% q_cw(tstep+500:end) = qf_cw*1.2;                  %incremental step change in cooling water flowrate
+q_cw(tstep+500:end) = qf_cw*1.2;                  %incremental step change in cooling water flowrate
 
 
 %% Initialize plotting variables
@@ -242,6 +242,8 @@ for i=1:len
     q_H2O(i) = PIcontroller(Qwater,Kc_MassBtPI,taui_MassBtPI,e_Mbt,eint_Mbt(i));
     
     P_net(i)=sum(P(i,:)); 
+    SOC.H = [-0.9726 0.2326];
+    SOC.c(i) = SOC.H*[Telin(i) Tw_out(i)]';
     
     if rem(i,1000)==0
         disp(i)
@@ -364,6 +366,17 @@ figure()
 plot(P_net./1e6)
 xlabel('Time, s')
 ylabel('P_{net},MW')
+
+figure()
+subplot(2,1,1)
+plot(q_cw)
+xlabel('Time, s')
+ylabel('q_{cw}, g/s')
+subplot(2,1,2)
+plot(SOC.c)
+xlabel('Time,s')
+ylabel('SOC')
+
 
 %% Creating the data file
 % save('data_closeloop_qlye1step_40hr5MW')
