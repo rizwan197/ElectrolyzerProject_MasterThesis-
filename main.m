@@ -53,6 +53,14 @@ Pcons(1) = sum(z0(2*par.N+1:3*par.N));
 Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 
+%SOC for the qcw for 3.4<=P_inp<5.1MW c=Hymeas, here H = [-0.9726 0.2326],
+%measurements = [Telin_set T_cwout_set]; these need to be updated online from RTO above  
+SOC.H = [-0.9726 0.2326];
+SOC.ymeas_set = [66.28 67.93]';%at P_inp = 5MW
+SOC.c_set = SOC.H*SOC.ymeas_set;%requires online updation
+SOC.ymeas0 = [T_El_in T_cw_out]';
+SOC.c0 = SOC.H*SOC.ymeas0;
+
 % for nEl = 1:par.N
 %     Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
 %     Qlossk(nEl) = par.TherMo(nEl).A_El*(par.TherMo(nEl).hc*(Tk(nEl)-par.EL(nEl).Ta) + par.sigma*par.em*((Tk(nEl)+273.15)^4-(par.EL(nEl).Ta+273.15)^4))/1000;
@@ -154,6 +162,17 @@ T3C.err0 = 0;
 PC.u0 = max(Vss);
 PC.Kc = 8.5/622000;
 PC.set = P_inp;
+
+%for pairing qcw-SOC
+SOC.u0 = qf_cw;
+SOC.tauC = 100;
+SOC.k;
+SOC.tau1;
+SOC.Kc;
+SOC.tauI;
+SOC.Ki;
+SOC.set = SOC.c_set;
+SOC.err0 = 0;
 
 %% Integrate plant over the time horizon
 for i=1:len
