@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 3;                           %no. of hours
+num_hr = 1;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -22,7 +22,7 @@ tstep = 200;
 %% Initial guess for steady state solution using IPOPT
 
 %disturbance is total power
-P_inp = 5e6; % total input power
+P_inp = 6e6; % total input power
 
 [z_guess,x_guess,u_guess] = init0(N,P_inp);
 X_guess = [z_guess x_guess u_guess];
@@ -47,19 +47,23 @@ zO2 = u0(2*par.N+3);
 Qwater = u0(2*par.N+4);
 nH2 = sum(z0(4*par.N+1:5*par.N));
 
-Tk(1,:) = x0(1:par.N);
-Pcons(1) = sum(z0(2*par.N+1:3*par.N));
-
 Iden = 0.1*z0(par.N+1:2*par.N)./par.EL(1).A;
 V_H2_ini = z0(4*par.N+1:5*par.N)*0.0224136*3600;
 
 %SOC for the qcw for 3.4<=P_inp<5.1MW c=Hymeas, here H = [-0.9726 0.2326],
-%measurements = [Telin_set T_cwout_set]; these need to be updated online from RTO above  
+%measurements = [Telin_set T_cwout_set]; these need to be updated online from RTO above
 SOC.H = [-0.9726 0.2326];
-SOC.ymeas_set = [66.28 67.93]';%at P_inp = 5MW
-SOC.c_set = SOC.H*SOC.ymeas_set;%requires online updation
+SOC.ymeas_set = [67.57 72.94]';%at P_inp = 5MW, requires online updation
+
+SOC.c_set = SOC.H*SOC.ymeas_set;
 SOC.ymeas0 = [T_El_in T_cw_out]';
-SOC.c0 = SOC.H*SOC.ymeas0;
+
+%initial value of the CVs
+SOC.c(1) = SOC.H*SOC.ymeas0;
+Tk(1,:) = x0(1:par.N);
+Iden1(1) = Iden(1);
+Pcons(1) = sum(z0(2*par.N+1:3*par.N));
+T_Elin(1) = T_El_in;
 
 % for nEl = 1:par.N
 %     Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
@@ -74,7 +78,7 @@ SOC.c0 = SOC.H*SOC.ymeas0;
 %     V_El(1:end,j) = Vss(j)*1;     %incremental step change in common voltage across all electrolysers
 % %         V_El(tstep+500:end,j)=Vss(j)*1.02;
 % end
-% 
+%
 % qlye = zeros(len,N);                   %lye flowrate, [g/s]
 % for j = 1:N
 %     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
@@ -83,7 +87,6 @@ SOC.c0 = SOC.H*SOC.ymeas0;
 
 q_cw = qf_cw*ones(len,1);                     %cooling water flow rate as a manipulated variable, [g/s]
 % q_cw(tstep+500:end) = qf_cw*1.2;                  %incremental step change in cooling water flowrate
-
 
 %% Initialize plotting variables
 Temp = zeros(len,N);                  %temp of the electrolyzer, [C]
@@ -125,22 +128,33 @@ pstoO2set = x0(par.N+2)*ones(len,1);
 Mass_Btset = x0(par.N+3)*ones(len,1); %setpoint for the mass in the buffer tank
 % Mass_Btset(tstep:end) = 3500000;
 %% PI controller for rest of the states
-%for pairing qlye1-T1 
+%for pairing qlye1-T1
 T1C.u0 = q_lyek(1);
 T1C.tauC = 100;
 T1C.k = -1.358e-3;
-T1C.tau1 = 3600;
+T1C.tau1 = 2900;
 T1C.Kc = (1/T1C.k)*(T1C.tau1/T1C.tauC);
 T1C.tauI = min(T1C.tau1,4*T1C.tauC);
 T1C.Ki = T1C.Kc/T1C.tauI;
 T1C.set = 80;
 T1C.err0 = 0;
 
+%for pairing qlye1-Iden1
+Iden1C.u0 = q_lyek(1);
+Iden1C.tauC = 100;
+Iden1C.k = -1.1e-3;
+Iden1C.tau1 = 1600;
+Iden1C.Kc = (1/Iden1C.k)*(Iden1C.tau1/Iden1C.tauC);
+Iden1C.tauI = min(Iden1C.tau1,4*Iden1C.tauC);
+Iden1C.Ki = Iden1C.Kc/Iden1C.tauI;
+Iden1C.set = 198.5;
+Iden1C.err0 = 0;
+
 %for pairing qlye2-T2
 T2C.u0 = q_lyek(2);
 T2C.tauC = 100;
 T2C.k = -9.712e-3;
-T2C.tau1 = 8500;
+T2C.tau1 = 7800;
 T2C.Kc = (1/T2C.k)*(T2C.tau1/T2C.tauC);
 T2C.tauI = min(T2C.tau1,4*T2C.tauC);
 T2C.Ki = T2C.Kc/T2C.tauI;
@@ -151,7 +165,7 @@ T2C.err0 = 0;
 T3C.u0 = q_lyek(3);
 T3C.tauC = 100;
 T3C.k = -0.01166;
-T3C.tau1 = 9600;
+T3C.tau1 = 8900;
 T3C.Kc = (1/T3C.k)*(T3C.tau1/T3C.tauC);
 T3C.tauI = min(T3C.tau1,4*T3C.tauC);
 T3C.Ki = T3C.Kc/T3C.tauI;
@@ -163,28 +177,67 @@ PC.u0 = max(Vss);
 PC.Kc = 8.5/622000;
 PC.set = P_inp;
 
+%pairing for Vel-Telin
+TElinC.u0 = max(Vss);
+TElinC.tauC = 100;
+TElinC.kDash = 9.05e-5;
+TElinC.Kc = (1/TElinC.kDash)*(1/TElinC.tauC);
+TElinC.tauI = 4*TElinC.tauC;
+TElinC.Ki = TElinC.Kc/TElinC.tauI;
+TElinC.set = 50;
+TElinC.err0 = 0;
+
 %for pairing qcw-SOC
 SOC.u0 = qf_cw;
 SOC.tauC = 100;
 SOC.k = 0.034;
-SOC.tau1=3450;
-SOC.Kc;
-SOC.tauI;
-SOC.Ki;
+SOC.tau1 = 500;%2750;
+SOC.theta = 50;
+SOC.Kc = (1/SOC.k)*(SOC.tau1/(SOC.tauC+SOC.theta));
+SOC.tauI = min(SOC.tau1,4*(SOC.tauC+SOC.theta));
+SOC.Ki = SOC.Kc/SOC.tauI;
 SOC.set = SOC.c_set;
 SOC.err0 = 0;
 
 %% Integrate plant over the time horizon
 for i=1:len
+    
     T1C.err = T1C.set - Tk(i,1);
     T2C.err = T2C.set - Tk(i,2);
     T3C.err = T3C.set - Tk(i,3);
     PC.err = PC.set - Pcons(i);
+    Iden1C.err = Iden1C.set - Iden1(i);
+    TElinC.err = TElinC.set - T_Elin(i);
+    %     SOC.err = SOC.c_set - SOC.c(i);
     
-    %PI controller qlye1-T1
-    qlye(i,1) = min(10e3,max(0.5e3,T1C.u0 + T1C.Kc*(T1C.err-T1C.err0) + T1C.Ki*T1C.err*ts));%0.5<=qlye1<=10
-    T1C.err0 = T1C.err;
-    T1C.u0 = qlye(i,1);
+    %     %PI controller qlye1-T1/Iden1
+    %     qlye(i,1) = min(10e3,max(0.5e3,T1C.u0 + T1C.Kc*(T1C.err-T1C.err0) + T1C.Ki*T1C.err*ts));%0.5<=qlye1<=10
+    %     T1C.err0 = T1C.err;
+    %     T1C.u0 = qlye(i,1);
+    
+    %     T1C.u = q_lyek(1);
+    %     Iden1C.u = q_lyek(1);
+    %
+    %         %PI controller qlye1-T1/Iden1
+    %         T1C.u = min(10e3,max(0.5e3,T1C.u0 + T1C.Kc*(T1C.err-T1C.err0) + T1C.Ki*T1C.err*ts));%0.5<=qlye1<=10
+    %         T1C.err0 = T1C.err;
+    %         T1C.u0 = qlye(i,1);
+    %
+    %
+    %         Iden1C.u = min(10e3,max(0.5e3,Iden1C.u0 + Iden1C.Kc*(Iden1C.err-Iden1C.err0) + Iden1C.Ki*Iden1C.err*ts));%0.5<=qlye1<=10
+    %         Iden1C.err0 = Iden1C.err;
+    %         Iden1C.u0 = qlye(i,1);
+    %
+    %         if Iden1(i) < Iden1C.set
+    %             qlye(i,1) =  T1C.u;
+    %         else
+    %             qlye(i,1) =  max(Iden1C.u,T1C.u);
+    %         end
+    
+    %PI controller qlye1-Iden1
+    qlye(i,1) = min(10e3,max(0.5e3,Iden1C.u0 + Iden1C.Kc*(Iden1C.err-Iden1C.err0) + Iden1C.Ki*Iden1C.err*ts));%0.5<=qlye1<=10
+    Iden1C.err0 = Iden1C.err;
+    Iden1C.u0 = qlye(i,1);
     
     %PI controller qlye2-T2
     qlye(i,2) = min(10e3,max(0.5e3,T2C.u0 + T2C.Kc*(T2C.err-T2C.err0) + T2C.Ki*T2C.err*ts));%0.5<=qlye2<=10
@@ -196,10 +249,22 @@ for i=1:len
     T3C.err0 = T3C.err;
     T3C.u0 = qlye(i,3);
     
-    %Proportional controller Vel-P_inp
-    VEl(i) = PC.u0 + PC.Kc*(PC.err);
-    PC.u0 = VEl(i);
-    V_El(i,:) = PC.u0*ones(1,par.N);
+%     %Proportional controller Vel-P_inp
+%     VEl(i) = PC.u0 + PC.Kc*(PC.err);
+%     PC.u0 = VEl(i);
+%     V_El(i,:) = PC.u0*ones(1,par.N);
+    
+    %PI controller for Vel-Telin
+    VEl(i) = TElinC.u0 + TElinC.Kc*(TElinC.err-TElinC.err0) + TElinC.Ki*TElinC.err*ts;
+    TElinC.err0 = TElinC.err;
+    TElinC.u0 = VEl(i);
+    V_El(i,:) = TElinC.u0*ones(1,par.N);
+    
+    %     %PI controller for qcw-SOC
+    %     q_cw(i) = min(80e3,max(1e3,SOC.u0 + SOC.Kc*(SOC.err-SOC.err0) + SOC.Ki*SOC.err*ts));
+    %     SOC.err0 = SOC.err;
+    %     SOC.u0 = q_cw(i);
+    
     
     %i = timestamp
     %j = electrolyzer sequence
@@ -208,7 +273,7 @@ for i=1:len
     z0 = full(r.zf);
     
     
-    %% Storing values in plotting variables    
+    %% Storing values in plotting variables
     nH2in(i) = full(r.zf(6*N+1));     %net hydrogen flow rate in to the storage at all timestamps, [mol/s]
     nH2out(i) = full(r.zf(6*N+2));    %net hydrogen flowrate out from the storage at all timestamps, [mol/s]
     nO2in(i) = full(r.zf(6*N+3));     %net oxygen flow rate in to the storage at all timestamps, [mol/s]
@@ -251,6 +316,7 @@ for i=1:len
         Ps(i,j) = P(i,j)/(1000*V_H2(i,j));          %Specific electricity consumption, [kWh/Nm3]
     end
     
+    
     %% Calculate the input trajectory with PI controller
     % for storage pressure of the hydrogen tank
     Kc_pstoH2PI = Kc(1);                %controller gain
@@ -264,7 +330,7 @@ for i=1:len
     taui_pstoO2PI = tauI(2);                %integral time constant
     e_pstoO2 = (PstoO2(i) - pstoO2set(i));
     ZO2(i) = PIcontroller(zO2,Kc_pstoO2PI,taui_pstoO2PI,e_pstoO2,eint_pstoO2(i));
-
+    
     
     %for mass in the buffer tank
     Kc_MassBtPI = Kc(3);
@@ -272,7 +338,7 @@ for i=1:len
     e_Mbt = mBufferT(i) - Mass_Btset(i);
     q_H2O(i) = PIcontroller(Qwater,Kc_MassBtPI,taui_MassBtPI,e_Mbt,eint_Mbt(i));
     
-    P_net(i)=sum(P(i,:)); 
+    P_net(i)=sum(P(i,:));
     
     if rem(i,1000)==0
         disp(i)
@@ -280,6 +346,10 @@ for i=1:len
     
     Tk(i+1,:) = Temp(i,:);
     Pcons(i+1) = P_net(i);
+    Iden1(i+1) = I_den(i,1);
+    T_Elin(i+1) = Telin(i);
+    %     SOC.ymeas = [Telin(i) Tw_out(i)]';
+    %     SOC.c(i+1) = SOC.H*SOC.ymeas;
 end
 
 %% Plotting the results
@@ -334,15 +404,25 @@ plot(mBufferT./1000)
 ylabel('Mass_{bt}, [kg]')
 xlabel('Time, s')
 
+% figure()
+% subplot(2,1,1)
+% plot(q_cw)
+% xlabel('Time, s')
+% ylabel('q_{cw}, g/s')
+% subplot(2,1,2)
+% plot(SOC.c)
+% xlabel('Time, s')
+% ylabel('SOC')
+
 figure()
 subplot(2,1,1)
 plot(V_El)
 xlabel('Time, s')
 ylabel('Cell voltage')
 subplot(2,1,2)
-plot(I_den)
+plot(Telin)
 xlabel('Time, s')
-ylabel('I_{den}, mA/cm^2')
+ylabel('T_{El,in}')
 
 figure()
 plot(Pcons./1e6)

@@ -2,7 +2,7 @@ clc
 clear
 close all
 
-load data_closeloop_qlye1step_40hr5MW.mat
+load data_closeloop_Velstep_3hr
 
 
 figure()
@@ -98,6 +98,16 @@ ylim([2999 3001])
 ylabel('Mass_{bt}, [kg]')
 xlabel('Time, s')
 
+figure()
+subplot(2,1,1)
+plot(V_El)
+xlabel('Time, s')
+ylabel('Voltage')
+
+subplot(2,1,2)
+plot(Telin)
+xlabel('Time, s')
+ylabel('T_{el,in}')
 
 % figure()
 % subplot(2,3,1)
