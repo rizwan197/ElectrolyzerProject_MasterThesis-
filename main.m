@@ -11,7 +11,7 @@ N = 3;                               %no. of electrolyzers
 par = parElectrolyzer(N);
 
 %% Inputs for the simulation
-num_hr = 1;                           %no. of hours
+num_hr = 3;                           %no. of hours
 t0 = 1;                                 %start, [s)]
 ts = 1;                                 %time step, [s]
 tf = num_hr*60*60;                      %final, [s]
@@ -22,7 +22,7 @@ tstep = 200;
 %% Initial guess for steady state solution using IPOPT
 
 %disturbance is total power
-P_inp = 6e6; % total input power
+P_inp = 5e6; % total input power
 
 [z_guess,x_guess,u_guess] = init0(N,P_inp);
 X_guess = [z_guess x_guess u_guess];
@@ -63,7 +63,8 @@ SOC.c(1) = SOC.H*SOC.ymeas0;
 Tk(1,:) = x0(1:par.N);
 Iden1(1) = Iden(1);
 Pcons(1) = sum(z0(2*par.N+1:3*par.N));
-T_Elin(1) = T_El_in;
+T_ElinC(1) = T_El_in;
+% T_ElinC(1) = max(Tk(1,:))-T_El_in;
 
 % for nEl = 1:par.N
 %     Qgenk(nEl) = par.EL(nEl).nc*(z0(nEl)-par.EL(nEl).Utn)*z0(par.N+nEl)/1000;
@@ -81,7 +82,7 @@ T_Elin(1) = T_El_in;
 %
 % qlye = zeros(len,N);                   %lye flowrate, [g/s]
 % for j = 1:N
-%     qlye(1:end,j) = q_lyek(j)*1;       %assumed same lye flowarate to all the electrolyzers
+%     qlye(1:end,1) = 10e3;%q_lyek(1)*1;       %assumed same lye flowarate to all the electrolyzers
 % end
 % qlye(tstep+500:end,1) = q_lyek(1)*1.2;
 
@@ -128,6 +129,114 @@ pstoO2set = x0(par.N+2)*ones(len,1);
 Mass_Btset = x0(par.N+3)*ones(len,1); %setpoint for the mass in the buffer tank
 % Mass_Btset(tstep:end) = 3500000;
 %% PI controller for rest of the states
+%% Region 1; P_inp>=5.84; no unconstrained DOF
+
+% % %for pairing qcw-Iden1
+% % Iden1C.u0 = qf_cw;
+% % Iden1C.tauC = 100;
+% % Iden1C.k = -1.465e-4;
+% % Iden1C.tau1 = 15300;
+% % Iden1C.Kc = (1/Iden1C.k)*(Iden1C.tau1/Iden1C.tauC);
+% % Iden1C.tauI = min(Iden1C.tau1,4*Iden1C.tauC);
+% % Iden1C.Ki = Iden1C.Kc/Iden1C.tauI;
+% % Iden1C.set = 198.5;
+% % Iden1C.err0 = 0;
+% 
+% %for pairing Vel-Iden1
+% Iden1C.u0 = max(Vss);
+% Iden1C.Kc = 8.5/16.5;
+% Iden1C.set = 198.5;
+% 
+% %for pairing qlye2-T2
+% T2C.u0 = q_lyek(2);
+% T2C.tauC = 100;
+% T2C.k = -9.712e-3;
+% T2C.tau1 = 7800;
+% T2C.Kc = (1/T2C.k)*(T2C.tau1/T2C.tauC);
+% T2C.tauI = min(T2C.tau1,4*T2C.tauC);
+% T2C.Ki = T2C.Kc/T2C.tauI;
+% T2C.set = 80;
+% T2C.err0 = 0;
+% 
+% %for pairing qlye3-T3
+% T3C.u0 = q_lyek(3);
+% T3C.tauC = 100;
+% T3C.k = -0.01166;
+% T3C.tau1 = 8900;
+% T3C.Kc = (1/T3C.k)*(T3C.tau1/T3C.tauC);
+% T3C.tauI = min(T3C.tau1,4*T3C.tauC);
+% T3C.Ki = T3C.Kc/T3C.tauI;
+% T3C.set = 80;
+% T3C.err0 = 0;
+% 
+% % %pairing for Vel-(Telin)
+% % TElinC.u0 = max(Vss);
+% % TElinC.tauC = 100;
+% % TElinC.kDash = 9.05e-5;
+% % TElinC.Kc = (1/TElinC.kDash)*(1/TElinC.tauC);
+% % TElinC.tauI = 4*TElinC.tauC;
+% % TElinC.Ki = TElinC.Kc/TElinC.tauI;
+% % TElinC.set = 50;
+% % TElinC.err0 = 0;
+% 
+% %for pairing qcw-Telin
+% TElinC.u0 = qf_cw;
+% TElinC.Kc = -63000e-4;
+% TElinC.set = 50;
+
+%% Region 2; 5.1MW<=P_inp<5.84
+
+% %for pairing qlye1-Iden1
+% Iden1C.u0 = q_lyek(1);
+% Iden1C.tauC = 100;
+% Iden1C.k = -1.1e-3;
+% Iden1C.tau1 = 1600;
+% Iden1C.Kc = (1/Iden1C.k)*(Iden1C.tau1/Iden1C.tauC);
+% Iden1C.tauI = min(Iden1C.tau1,4*Iden1C.tauC);
+% Iden1C.Ki = Iden1C.Kc/Iden1C.tauI;
+% Iden1C.set = 198.5;
+% Iden1C.err0 = 0;
+% 
+% %for pairing qlye2-T2
+% T2C.u0 = q_lyek(2);
+% T2C.tauC = 100;
+% T2C.k = -9.712e-3;
+% T2C.tau1 = 7800;
+% T2C.Kc = (1/T2C.k)*(T2C.tau1/T2C.tauC);
+% T2C.tauI = min(T2C.tau1,4*T2C.tauC);
+% T2C.Ki = T2C.Kc/T2C.tauI;
+% T2C.set = 80;
+% T2C.err0 = 0;
+% 
+% %for pairing qlye3-T3
+% T3C.u0 = q_lyek(3);
+% T3C.tauC = 100;
+% T3C.k = -0.01166;
+% T3C.tau1 = 8900;
+% T3C.Kc = (1/T3C.k)*(T3C.tau1/T3C.tauC);
+% T3C.tauI = min(T3C.tau1,4*T3C.tauC);
+% T3C.Ki = T3C.Kc/T3C.tauI;
+% T3C.set = 80;
+% T3C.err0 = 0;
+% 
+% %for pairing Vel-Pnet
+% PC.u0 = max(Vss);
+% PC.Kc = 8.5/622000;
+% PC.set = P_inp;
+% 
+% %for pairing unconstrained qcw-SOC
+% SOC.u0 = qf_cw;
+% SOC.tauC = 100;
+% SOC.k = 0.034;
+% SOC.tau1 = 500;%2750;
+% SOC.theta = 50;
+% SOC.Kc = (1/SOC.k)*(SOC.tau1/(SOC.tauC+SOC.theta));
+% SOC.tauI = min(SOC.tau1,4*(SOC.tauC+SOC.theta));
+% SOC.Ki = SOC.Kc/SOC.tauI;
+% SOC.set = SOC.c_set;
+% SOC.err0 = 0;
+
+%% Region 3; 3.4<=P_inp<5.1MW
 %for pairing qlye1-T1
 T1C.u0 = q_lyek(1);
 T1C.tauC = 100;
@@ -138,17 +247,6 @@ T1C.tauI = min(T1C.tau1,4*T1C.tauC);
 T1C.Ki = T1C.Kc/T1C.tauI;
 T1C.set = 80;
 T1C.err0 = 0;
-
-%for pairing qlye1-Iden1
-Iden1C.u0 = q_lyek(1);
-Iden1C.tauC = 100;
-Iden1C.k = -1.1e-3;
-Iden1C.tau1 = 1600;
-Iden1C.Kc = (1/Iden1C.k)*(Iden1C.tau1/Iden1C.tauC);
-Iden1C.tauI = min(Iden1C.tau1,4*Iden1C.tauC);
-Iden1C.Ki = Iden1C.Kc/Iden1C.tauI;
-Iden1C.set = 198.5;
-Iden1C.err0 = 0;
 
 %for pairing qlye2-T2
 T2C.u0 = q_lyek(2);
@@ -177,17 +275,7 @@ PC.u0 = max(Vss);
 PC.Kc = 8.5/622000;
 PC.set = P_inp;
 
-%pairing for Vel-Telin
-TElinC.u0 = max(Vss);
-TElinC.tauC = 100;
-TElinC.kDash = 9.05e-5;
-TElinC.Kc = (1/TElinC.kDash)*(1/TElinC.tauC);
-TElinC.tauI = 4*TElinC.tauC;
-TElinC.Ki = TElinC.Kc/TElinC.tauI;
-TElinC.set = 50;
-TElinC.err0 = 0;
-
-%for pairing qcw-SOC
+%for pairing uncontrained DOF; qcw-SOC (T_elin,Tcw_out)
 SOC.u0 = qf_cw;
 SOC.tauC = 100;
 SOC.k = 0.034;
@@ -202,70 +290,129 @@ SOC.err0 = 0;
 %% Integrate plant over the time horizon
 for i=1:len
     
-    T1C.err = T1C.set - Tk(i,1);
-    T2C.err = T2C.set - Tk(i,2);
-    T3C.err = T3C.set - Tk(i,3);
-    PC.err = PC.set - Pcons(i);
-    Iden1C.err = Iden1C.set - Iden1(i);
-    TElinC.err = TElinC.set - T_Elin(i);
-    %     SOC.err = SOC.c_set - SOC.c(i);
+    %% Region 1; P_inp>5.84
     
-    %     %PI controller qlye1-T1/Iden1
-    %     qlye(i,1) = min(10e3,max(0.5e3,T1C.u0 + T1C.Kc*(T1C.err-T1C.err0) + T1C.Ki*T1C.err*ts));%0.5<=qlye1<=10
-    %     T1C.err0 = T1C.err;
-    %     T1C.u0 = qlye(i,1);
+%     Iden1C.err = Iden1C.set - Iden1(i);
+%     T2C.err = T2C.set - Tk(i,2);
+%     T3C.err = T3C.set - Tk(i,3);
+%     TElinC.err = TElinC.set - T_ElinC(i);
+%     
+% %             %PI controller qcw-Iden1
+% %                 q_cw(i) = min(80e3,max(1e3,Iden1C.u0 + Iden1C.Kc*(Iden1C.err-Iden1C.err0) + Iden1C.Ki*Iden1C.err*ts));%0.01<=qcw<=80
+% %                 Iden1C.err0 = Iden1C.err;
+% %                 Iden1C.u0 = q_cw(i);
+%     
+%     %Proportional controller Vel-Iden1
+%     VEl(i) = Iden1C.u0 + Iden1C.Kc*(Iden1C.err);
+%     Iden1C.u0 = VEl(i);
+%     V_El(i,:) = Iden1C.u0*ones(1,par.N);
+%     
+%     %PI controller qlye2-T2
+%     qlye(i,2) = min(10e3,max(0.5e3,T2C.u0 + T2C.Kc*(T2C.err-T2C.err0) + T2C.Ki*T2C.err*ts));%0.5<=qlye2<=10
+%     T2C.err0 = T2C.err;
+%     T2C.u0 = qlye(i,2);
+%     
+%     %PI controller qlye3-T3
+%     qlye(i,3) = min(10e3,max(0.5e3,T3C.u0 + T3C.Kc*(T3C.err-T3C.err0) + T3C.Ki*T3C.err*ts));%0.5<=qlye3<=10
+%     T3C.err0 = T3C.err;
+%     T3C.u0 = qlye(i,3);
+%     
+% %             %PI controller for Vel-Telin
+% %             VEl(i) = TElinC.u0 + TElinC.Kc*(TElinC.err-TElinC.err0) + TElinC.Ki*TElinC.err*ts;
+% %             TElinC.err0 = TElinC.err;
+% %             TElinC.u0 = VEl(i);
+% %             V_El(i,:) = TElinC.u0*ones(1,par.N);
+%     
+%     %Proportional controller qcw-Telin
+%     q_cw(i) = min(80e3,max(1e-2,TElinC.u0 + TElinC.Kc*(TElinC.err)));
+%     TElinC.u0 = q_cw(i);
+     
+    %% Region 2; 5.1<=P_inp<5.84
+%         T2C.err = T2C.set - Tk(i,2);
+%         T3C.err = T3C.set - Tk(i,3);
+%         PC.err = PC.set - Pcons(i);
+%         Iden1C.err = Iden1C.set - Iden1(i);
+%     %     SOC.err = SOC.c_set - SOC.c(i);
+%     
+%         %PI controller qlye1-Iden1
+%         qlye(i,1) = min(10e3,max(0.5e3,Iden1C.u0 + Iden1C.Kc*(Iden1C.err-Iden1C.err0) + Iden1C.Ki*Iden1C.err*ts));%0.5<=qlye1<=10
+%         Iden1C.err0 = Iden1C.err;
+%         Iden1C.u0 = qlye(i,1);
+%     
+%         %PI controller qlye2-T2
+%         qlye(i,2) = min(10e3,max(0.5e3,T2C.u0 + T2C.Kc*(T2C.err-T2C.err0) + T2C.Ki*T2C.err*ts));%0.5<=qlye2<=10
+%         T2C.err0 = T2C.err;
+%         T2C.u0 = qlye(i,2);
+%     
+%         %PI controller qlye3-T3
+%         qlye(i,3) = min(10e3,max(0.5e3,T3C.u0 + T3C.Kc*(T3C.err-T3C.err0) + T3C.Ki*T3C.err*ts));%0.5<=qlye3<=10
+%         T3C.err0 = T3C.err;
+%         T3C.u0 = qlye(i,3);
+%     
+%         %Proportional controller Vel-P_inp
+%         VEl(i) = PC.u0 + PC.Kc*(PC.err);
+%         PC.u0 = VEl(i);
+%         V_El(i,:) = PC.u0*ones(1,par.N);
+%     
+%     
+%         %     %PI controller for qcw-SOC
+%         %     q_cw(i) = min(80e3,max(1e3,SOC.u0 + SOC.Kc*(SOC.err-SOC.err0) + SOC.Ki*SOC.err*ts));
+%         %     SOC.err0 = SOC.err;
+%         %     SOC.u0 = q_cw(i);
     
-    %     T1C.u = q_lyek(1);
-    %     Iden1C.u = q_lyek(1);
-    %
-    %         %PI controller qlye1-T1/Iden1
-    %         T1C.u = min(10e3,max(0.5e3,T1C.u0 + T1C.Kc*(T1C.err-T1C.err0) + T1C.Ki*T1C.err*ts));%0.5<=qlye1<=10
-    %         T1C.err0 = T1C.err;
-    %         T1C.u0 = qlye(i,1);
-    %
-    %
-    %         Iden1C.u = min(10e3,max(0.5e3,Iden1C.u0 + Iden1C.Kc*(Iden1C.err-Iden1C.err0) + Iden1C.Ki*Iden1C.err*ts));%0.5<=qlye1<=10
-    %         Iden1C.err0 = Iden1C.err;
-    %         Iden1C.u0 = qlye(i,1);
-    %
-    %         if Iden1(i) < Iden1C.set
-    %             qlye(i,1) =  T1C.u;
-    %         else
-    %             qlye(i,1) =  max(Iden1C.u,T1C.u);
-    %         end
+    %% Region 3; 3.4<=P_inp<5.1
     
-    %PI controller qlye1-Iden1
-    qlye(i,1) = min(10e3,max(0.5e3,Iden1C.u0 + Iden1C.Kc*(Iden1C.err-Iden1C.err0) + Iden1C.Ki*Iden1C.err*ts));%0.5<=qlye1<=10
-    Iden1C.err0 = Iden1C.err;
-    Iden1C.u0 = qlye(i,1);
+        T1C.err = T1C.set - Tk(i,1);
+        T2C.err = T2C.set - Tk(i,2);
+        T3C.err = T3C.set - Tk(i,3);
+        PC.err = PC.set - Pcons(i);
+        %SOC.err = SOC.c_set - SOC.c(i);
     
-    %PI controller qlye2-T2
-    qlye(i,2) = min(10e3,max(0.5e3,T2C.u0 + T2C.Kc*(T2C.err-T2C.err0) + T2C.Ki*T2C.err*ts));%0.5<=qlye2<=10
-    T2C.err0 = T2C.err;
-    T2C.u0 = qlye(i,2);
+            %PI controller qlye1-T1
+            qlye(i,1) = min(10e3,max(0.5e3,T1C.u0 + T1C.Kc*(T1C.err-T1C.err0) + T1C.Ki*T1C.err*ts));%0.5<=qlye1<=10
+            T1C.err0 = T1C.err;
+            T1C.u0 = qlye(i,1);
     
-    %PI controller qlye3-T3
-    qlye(i,3) = min(10e3,max(0.5e3,T3C.u0 + T3C.Kc*(T3C.err-T3C.err0) + T3C.Ki*T3C.err*ts));%0.5<=qlye3<=10
-    T3C.err0 = T3C.err;
-    T3C.u0 = qlye(i,3);
+            %     T1C.u = q_lyek(1);
+            %     Iden1C.u = q_lyek(1);
+            %
+            %         %PI controller qlye1-T1/Iden1
+            %         T1C.u = min(10e3,max(0.5e3,T1C.u0 + T1C.Kc*(T1C.err-T1C.err0) + T1C.Ki*T1C.err*ts));%0.5<=qlye1<=10
+            %         T1C.err0 = T1C.err;
+            %         T1C.u0 = qlye(i,1);
+            %
+            %
+            %         Iden1C.u = min(10e3,max(0.5e3,Iden1C.u0 + Iden1C.Kc*(Iden1C.err-Iden1C.err0) + Iden1C.Ki*Iden1C.err*ts));%0.5<=qlye1<=10
+            %         Iden1C.err0 = Iden1C.err;
+            %         Iden1C.u0 = qlye(i,1);
+            %
+            %         if Iden1(i) < Iden1C.set
+            %             qlye(i,1) =  T1C.u;
+            %         else
+            %             qlye(i,1) =  max(Iden1C.u,T1C.u);
+            %         end
     
-%     %Proportional controller Vel-P_inp
-%     VEl(i) = PC.u0 + PC.Kc*(PC.err);
-%     PC.u0 = VEl(i);
-%     V_El(i,:) = PC.u0*ones(1,par.N);
+            %PI controller qlye2-T2
+            qlye(i,2) = min(10e3,max(0.5e3,T2C.u0 + T2C.Kc*(T2C.err-T2C.err0) + T2C.Ki*T2C.err*ts));%0.5<=qlye2<=10
+            T2C.err0 = T2C.err;
+            T2C.u0 = qlye(i,2);
     
-    %PI controller for Vel-Telin
-    VEl(i) = TElinC.u0 + TElinC.Kc*(TElinC.err-TElinC.err0) + TElinC.Ki*TElinC.err*ts;
-    TElinC.err0 = TElinC.err;
-    TElinC.u0 = VEl(i);
-    V_El(i,:) = TElinC.u0*ones(1,par.N);
+            %PI controller qlye3-T3
+            qlye(i,3) = min(10e3,max(0.5e3,T3C.u0 + T3C.Kc*(T3C.err-T3C.err0) + T3C.Ki*T3C.err*ts));%0.5<=qlye3<=10
+            T3C.err0 = T3C.err;
+            T3C.u0 = qlye(i,3);
     
-    %     %PI controller for qcw-SOC
-    %     q_cw(i) = min(80e3,max(1e3,SOC.u0 + SOC.Kc*(SOC.err-SOC.err0) + SOC.Ki*SOC.err*ts));
-    %     SOC.err0 = SOC.err;
-    %     SOC.u0 = q_cw(i);
+            %Proportional controller Vel-P_inp
+            VEl(i) = PC.u0 + PC.Kc*(PC.err);
+            PC.u0 = VEl(i);
+            V_El(i,:) = PC.u0*ones(1,par.N);
     
+    %         %PI controller for qcw-SOC
+    %         q_cw(i) = min(80e3,max(1e3,SOC.u0 + SOC.Kc*(SOC.err-SOC.err0) + SOC.Ki*SOC.err*ts));
+    %         SOC.err0 = SOC.err;
+    %         SOC.u0 = q_cw(i);
     
+    %% Plant simulation
     %i = timestamp
     %j = electrolyzer sequence
     r =  F('x0',x0,'z0',z0,'p',[V_El(i,:), qlye(i,:), q_cw(i), pstoH2set(i), pstoO2set(i), Mass_Btset(i)]);
@@ -347,7 +494,8 @@ for i=1:len
     Tk(i+1,:) = Temp(i,:);
     Pcons(i+1) = P_net(i);
     Iden1(i+1) = I_den(i,1);
-    T_Elin(i+1) = Telin(i);
+    T_ElinC(i+1) = Telin(i);
+% T_ElinC(i+1) = max(Temp(i,:))-Telin(i);
     %     SOC.ymeas = [Telin(i) Tw_out(i)]';
     %     SOC.c(i+1) = SOC.H*SOC.ymeas;
 end

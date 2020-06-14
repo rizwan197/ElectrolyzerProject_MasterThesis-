@@ -105,9 +105,9 @@ xlabel('Time, s')
 ylabel('Voltage')
 
 subplot(2,1,2)
-plot(Telin)
+plot(I_den(:,1))
 xlabel('Time, s')
-ylabel('T_{el,in}')
+ylabel('I_{den,1}, mA/cm^2')
 
 % figure()
 % subplot(2,3,1)
