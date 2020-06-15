@@ -2,7 +2,7 @@ clc
 clear
 close all
 
-load data_closeloop_Velstep_3hr
+load data_closeloop_qcwstep_3hr
 
 
 figure()
@@ -56,9 +56,9 @@ subplot(2,2,2)
 for i=1:length(Temp)
     TkGrad(i) = max(Temp(i,:))-Telin(i);
 end
-plot(TkGrad)
+plot(Telin)
 xlabel('Time, s')
-ylabel('T_k-T_{El_{in}} const')
+ylabel('T_{El_{in}}')
 subplot(2,2,4)
 plot(P_net./1e6)
 xlabel('Time, s')
@@ -98,16 +98,16 @@ ylim([2999 3001])
 ylabel('Mass_{bt}, [kg]')
 xlabel('Time, s')
 
-figure()
-subplot(2,1,1)
-plot(V_El)
-xlabel('Time, s')
-ylabel('Voltage')
 
-subplot(2,1,2)
-plot(I_den(:,1))
-xlabel('Time, s')
-ylabel('I_{den,1}, mA/cm^2')
+% figure()
+% subplot(2,1,1)
+% plot(V_El)
+% xlabel('Time, s')
+% ylabel('Voltage')
+% subplot(2,1,2)
+% plot(I_den(:,1))
+% xlabel('Time, s')
+% ylabel('I_{den,1}, mA/cm^2')
 
 % figure()
 % subplot(2,3,1)
