@@ -159,7 +159,7 @@ for nEl = 1:par.N
 end
 Pcons = sum(PconsEl);
 qlyeTot = sum(qlyeEl);
-J = -(Objvol_H2(1)+Objvol_H2(2)+Objvol_H2(3))+7*1e-3*qlyeTot;%+0.0001*Pcons;
+J = -(Objvol_H2(1)+Objvol_H2(2)+Objvol_H2(3));%+7*1e-3*qlyeTot;%+0.0001*Pcons;
 
 % J = 10;
 
