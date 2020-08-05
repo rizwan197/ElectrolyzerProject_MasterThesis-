@@ -3,7 +3,7 @@ clear
 close all
 
 %% Load CasADi
-addpath('/Users/mdrizwan/Documents/MATLAB/casadi-osx-matlabR2015a-v3.5.1')
+addpath('/Users/mdrizwan/Documents/MATLAB/casadi-osx-matlabR2015a-v3.5.2')
 import casadi.*
 
 %% Loading parameters
@@ -62,7 +62,7 @@ u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0];
 counter = 1;
 flag = {};
 
-for Pnet = 7e6:-0.1e6:1.1e6
+for Pnet = 9e6:-0.1e6:.6e6
     
 X_guess = [z_guess x_guess u_guess];
 
@@ -105,10 +105,10 @@ row_C_S2(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T
 if strcmp(EXIT,'Solve_Succeeded')
     ac_C_S2(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (max(Tk)-T_El_in_set)/30, Pcons/Pnet,...
         qlye_kgs/10, 0.5./qlye_kgs, qcw_kgs/80 1e-5/qcw_kgs];
-    plot_C_S2_DegHex(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
+    plot_C_S2_DegHex(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Vss,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
 else
     ac_C_S2(counter,:) = NaN*ones(1,6*par.N+4);
-    plot_C_S2_DegHex(counter,:) = 0*ones(1,4*par.N+7);
+    plot_C_S2_DegHex(counter,:) = 0*ones(1,5*par.N+7);
 end
 
 flag = {flag{:},EXIT}';
