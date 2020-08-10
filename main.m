@@ -3,7 +3,7 @@ clear
 close all
 
 %% Load CasADi
-addpath('/Users/mdrizwan/Documents/MATLAB/casadi-osx-matlabR2015a-v3.5.1')
+addpath('/Users/mdrizwan/Documents/MATLAB/casadi-osx-matlabR2015a-v3.5.3')
 import casadi.*
 
 %% Loading parameters
