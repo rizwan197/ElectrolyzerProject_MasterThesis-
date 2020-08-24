@@ -54,6 +54,13 @@ ylabel('% Loss in production w.r.t F_2HX_{OS}q_{lye,var}')
 grid on
 xlim([1,7])
 ylim([-10,30])
+% h1 = xline(5.1,'--k','Medium Power','LabelOrientation','Horizontal','FontSize',12);
+% h1.Annotation.LegendInformation.IconDisplayStyle = 'off';
+% h2 = xline(5.8,'--k','High Power','LabelOrientation','Horizontal','FontSize',12);
+% h2.Annotation.LegendInformation.IconDisplayStyle = 'off';
+% h3 = xline(3.4,'--k','Low Power','LabelOrientation','Horizontal','FontSize',12);
+% h3.Annotation.LegendInformation.IconDisplayStyle = 'off';
+% box on
 saveas(fig1,'CompF1wrtS2F2opt','epsc');
 
 set(0, 'DefaultAxesFontSize', 12,  'DefaultLineLineWidth', 1.5)

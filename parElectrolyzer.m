@@ -14,7 +14,7 @@ par.Storage = struct('VstoH2',965000,'VstoO2',482500,'PoutH2',19,'PoutO2',19,...
 %VstoH2 and VstoO2 are in litres
 
 par.Tw_in = 10;             %inlet temperature of the cooling water in lye circulation heat exchanger
-par.Hex.UA = 20.48e3;%1*1.5205e4; %UA of heat exchanger [W/K], calculated from previous ss formulation
+par.Hex.UA = 1*1.5205e4;%20.48e3; %UA of heat exchanger [W/K], calculated from previous ss formulation
 par.kvalveH2 = 14.723;      %valve constant for the outlet valve of hydrogen storage tank, calculated for 25 bar storage pressure at SS   
 par.kvalveO2 = 7.362;       %valve constant for the outlet valve of oxygen storage tank, calculated for 25 bar storage pressure at SS    
 par.sigma = 5.672*10^-8;    %stefan-boltzmann constant [W/m^2 K^4]

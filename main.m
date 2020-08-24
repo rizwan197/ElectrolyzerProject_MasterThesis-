@@ -3,7 +3,7 @@ clear
 close all
 
 %% Load CasADi
-addpath('/Users/mdrizwan/Documents/MATLAB/casadi-osx-matlabR2015a-v3.5.2')
+addpath('/Users/mdrizwan/Documents/MATLAB/casadi-osx-matlabR2015a-v3.5.3')
 import casadi.*
 
 %% Loading parameters
@@ -100,7 +100,7 @@ for nEl = 1:par.N
     Qnet(nEl) = Qlyeloss(nEl)+Qgenk(nEl)-Qlossk(nEl);
 end
 
-row_C_S2(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini)];
+row_C_S2(counter,:) = [Pnet/1e6,Pcons/1e6,qlye_kgs,qcw_kgs,Iden,Tk,T_El_in_set,T_cw_out,T_bt_out,V_H2_ini, sum(V_H2_ini) Qnet];
 
 if strcmp(EXIT,'Solve_Succeeded')
     ac_C_S2(counter,:) = [Iden/198.5, 32./Iden, Tk/80, 25./Tk, (max(Tk)-T_El_in_set)/30, Pcons/Pnet,...
