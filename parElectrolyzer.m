@@ -61,6 +61,7 @@ for i =1:N
     par.EL(i).Tstd = 25;               %standard temperature, [C]
     
 end
+%% comment this section for the flowsheet with all new electrolyzers
 %El #2, performing at 85% of electrolyzer 1 
 par.U(2).r1 = par.U(2).r1*1.2;             %ohm m^2
 par.U(2).s = par.U(2).s*1.2;               %V

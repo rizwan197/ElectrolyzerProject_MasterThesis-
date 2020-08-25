@@ -31,7 +31,7 @@ i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current
 Feff_k0 = 0.97*ones(1,par.N);
 nH2_k0 = 6*ones(1,par.N);               %[mol/s]
 qH2Oloss_k0 = nH2_k0*par.Const.Mwt.*ones(1,par.N);%[g/s]
-T_bt_in0 = 73*ones(1,par.N);       %Initial guess for the temperature of lye mixture at the inlet of the buffer tank,[degC]
+T_bt_in0 = 73*ones(1,par.N);            %Initial guess for the temperature of lye mixture at the inlet of the buffer tank,[degC]
 
 %differential state variables('x')
 T_k0 = 75*ones(1,par.N);
