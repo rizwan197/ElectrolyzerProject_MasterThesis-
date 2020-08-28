@@ -25,37 +25,37 @@ tstep = 200;
 Pnet = 5e6;%1900e3*par.N; %6.3MW total input power
 
 %algebriac state variables('z')
-u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
-P_k0 = Pnet/par.N*ones(1,par.N);        %intial guess is power divided equally among electrolyzers
-i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current
-Feff_k0 = 0.97*ones(1,par.N);
-nH2_k0 = 6*ones(1,par.N);               %[mol/s]
-qH2Oloss_k0 = nH2_k0*par.Const.Mwt.*ones(1,par.N);%[g/s]
-nH2El_net0 = sum(nH2_k0);               %[mol/s]
-nH2out_net0 = sum(nH2_k0);
-nO2El_net0 = 0.5*nH2El_net0;
-nO2out_net0 = 0.5*nH2out_net0;
-T_El_out0 = 80;                         %initial guess for the temperature of lye entering in the heat exchanger
+    u_k0 = 1.8*ones(1,par.N);               %initial guess for cell voltage
+    P_k0 = Pnet/par.N*ones(1,par.N);        %intial guess is power divided equally among electrolyzers
+    i_k0 = P_k0./(u_k0.*par.EL(1).nc);      %initial guess for current
+    Feff_k0 = 0.97*ones(1,par.N);
+    nH2_k0 = 6*ones(1,par.N);               %[mol/s]
+    qH2Oloss_k0 = nH2_k0*par.Const.Mwt.*ones(1,par.N);%[g/s]
+    nH2El_net0 = sum(nH2_k0);               %[mol/s]
+    nH2out_net0 = sum(nH2_k0);
+    nO2El_net0 = 0.5*nH2El_net0;
+    nO2out_net0 = 0.5*nH2out_net0;
+    T_El_out0 = 80;                         %initial guess for the temperature of lye entering in the heat exchanger
 
 %differential state variables('x')
-T_k0 = 75*ones(1,par.N);
-Psto_H20 = 25;        %initial H2 storage pressure (calculated from steady state solution) [bar]
-Psto_O20 = 25;        %initial O2 storage pressure (calculated from steady state solution) [bar]
-Mass_Bt0 = 6000000;  %mass of the liquid in the buffer tank,[g] 6000kg
-T_bt_out0 = 70;       %Initial guess for the temperature of lye mixture at the exit of the buffer tank,[degC]
-T_El_in0 = 65;        %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
-T_cw_out0 = 20;       %initial guess for the exit temperature of the cooling water leaving heat exchanger,[deg C]
+    T_k0 = 75*ones(1,par.N);
+    Psto_H20 = 25;        %initial H2 storage pressure (calculated from steady state solution) [bar]
+    Psto_O20 = 25;        %initial O2 storage pressure (calculated from steady state solution) [bar]
+    Mass_Bt0 = 3000000;  %mass of the liquid in the buffer tank,[g] 6000kg
+    T_bt_out0 = 70;       %Initial guess for the temperature of lye mixture at the exit of the buffer tank,[degC]
+    T_El_in0 = 65;        %initial guess for the temperature of inlet lye into the electrolyzer, [deg C]
+    T_cw_out0 = 20;       %initial guess for the exit temperature of the cooling water leaving heat exchanger,[deg C]
 
 z_guess = [u_k0 i_k0 P_k0 Feff_k0 nH2_k0 qH2Oloss_k0 nH2El_net0 nH2out_net0 nO2El_net0 nO2out_net0 T_El_out0];
 x_guess = [T_k0 Psto_H20 Psto_O20 Mass_Bt0 T_bt_out0 T_El_in0 T_cw_out0];
 
 %initial guess for input variables('u')
-U_El_k_0 = 414.0301*ones(1,par.N);      %voltage across electrolyzers, [Volts]
-q_lye_k_0 = 6648*ones(1,par.N);         %lye flowrate, [g/s]
-q_cw_0 = 2.0698e4;                      %cooling water flow rate, [g/s]
-zH2_0 = 0.4;
-zO2_0 = 0.4;
-q_H2O_0 = 324.2657;                     %total water lost during electrolysis, [grams/sec]
+    U_El_k_0 = 414.0301*ones(1,par.N);      %voltage across electrolyzers, [Volts]
+    q_lye_k_0 = 6648*ones(1,par.N);         %lye flowrate, [g/s]
+    q_cw_0 = 2.0698e4;                      %cooling water flow rate, [g/s]
+    zH2_0 = 0.4;
+    zO2_0 = 0.4;
+    q_H2O_0 = 324.2657;                     %total water lost during electrolysis, [grams/sec]
 
 u_guess = [U_El_k_0 q_lye_k_0 q_cw_0 zH2_0 zO2_0 q_H2O_0];
 
@@ -65,11 +65,14 @@ flag = {};
 X_guess = [z_guess x_guess u_guess];
 
 %% Solve the steady state problem
-[z0, x0, u0, EXIT] = El_SteadyStateOptimization(N,X_guess,Pnet);
+% [z0, x0, u0, EXIT] = El_SteadyStateOptimization(N,X_guess,Pnet);
+% z_guess = z0;
+% x_guess = x0;
+% u_guess = u0;
 
-z_guess = z0;
-x_guess = x0;
-u_guess = u0;
+z0 = z_guess;
+x0 = x_guess;
+u0 = u_guess;
 
 T_El_in_set = x0(par.N+5);%setpoint for the temperature of lye entering the electrolyzer
 T_cw_out = x0(par.N+6);
@@ -253,21 +256,6 @@ end
 
 %% Plotting the results
 
-% figure()
-% subplot(2,1,1)
-% plot(V_H2)
-% xlabel('Time, s')
-% ylabel('H_2 production rate, [Nm^3/hr]')
-% legend('El 1','El 2', 'El 3')
-% grid on
-% subplot(2,1,2)
-% plot(Ps)
-% xlabel('Time, s')
-% ylabel('Specific electricity consumption, [kWh/Nm^3]')
-% ylim([4.3, 4.7])
-% legend('El 1','El 2', 'El 3')
-% grid on
-
 figure()
 subplot(6,2,1)
 plot(qlye)
@@ -326,32 +314,6 @@ ylabel('Mass_{bt}, [kg]')
 xlabel('Time, s')
 
 
-% figure()
-% subplot(2,3,1)
-% plot(Qnet(:,1))
-% xlabel('Time, s')
-% ylabel('Q_{net,1}')
-% subplot(2,3,2)
-% plot(Qnet(:,2))
-% xlabel('Time, s')
-% ylabel('Q_{net,2}')
-% subplot(2,3,3)
-% plot(Qnet(:,3))
-% xlabel('Time, s')
-% ylabel('Q_{net,3}')
-% subplot(2,3,4)
-% plot(Temp(:,1))
-% xlabel('Time, s')
-% ylabel('T_{el,1}')
-% subplot(2,3,5)
-% plot(Temp(:,2))
-% xlabel('Time, s')
-% ylabel('T_{el,2}')
-% subplot(2,3,6)
-% plot(Temp(:,3))
-% xlabel('Time, s')
-% ylabel('T_{el,3}')
-
 figure()
 subplot(2,1,1)
 plot(V_El)
@@ -367,17 +329,14 @@ plot(P_net./1e6)
 xlabel('Time, s')
 ylabel('P_{net},MW')
 
-figure()
-subplot(2,1,1)
-plot(q_cw)
-xlabel('Time, s')
-ylabel('q_{cw}, g/s')
-subplot(2,1,2)
-plot(SOC.c)
-xlabel('Time,s')
-ylabel('SOC')
+% figure()
+% subplot(2,1,1)
+% plot(q_cw)
+% xlabel('Time, s')
+% ylabel('q_{cw}, g/s')
+% subplot(2,1,2)
+% plot(SOC.c)
+% xlabel('Time,s')
+% ylabel('SOC')
 
 
-%% Creating the data file
-% save('data_closeloop_qlye1step_40hr5MW')
-% load data_q1step3000_MVQcool_12hr
